@@ -34,13 +34,12 @@ import java.io.{IOException, File}
 
 import org.eclipse.jgit.api.errors.GitAPIException
 import org.eclipse.jgit.api.{ListBranchCommand, Git}
-import org.eclipse.jgit.lib.{Ref => JGitRef, Repository}
+import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.sourepoheatmap.repository.GitVaultInfoAdapter.GitVaultException
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable
 
 /**
  * Class for providing ability to get information from a repository.
@@ -87,8 +86,8 @@ class GitVaultInfoAdapter(repoPath: String) {
     mRepo.incrementOpen
     try {
       val git = new Git(mRepo)
-      val branchList: mutable.Buffer[JGitRef] = getBranchList(git.branchList).call
-      for (branch <- branchList.toList) yield branch.getName
+      val branchList = getBranchList(git.branchList).call.toList
+      for (branch <- branchList) yield branch.getName
     } catch {
       case ex: GitAPIException => throw new GitVaultException("Failed to get branches: " + ex.getMessage)
     } finally mRepo.close
