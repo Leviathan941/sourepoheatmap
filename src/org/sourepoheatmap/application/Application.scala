@@ -41,18 +41,23 @@ import org.sourepoheatmap.repository.GitVaultInfoAdapter
  */
 object Application {
   def main(args: Array[String]) {
-    val gitDiffAdapter = new GitVaultInfoAdapter("/home/leviathan/projects/melange")
+    val gitAdapter = new GitVaultInfoAdapter("/home/leviathan/projects/melange")
     try {
-      println(gitDiffAdapter.getHeadBranchFullName)
-      println(gitDiffAdapter.getHeadBranchName)
+      println(gitAdapter.getHeadBranchFullName)
+      println(gitAdapter.getHeadBranchName)
       println
-      gitDiffAdapter.getAllBranches.foreach(println)
+      gitAdapter.getAllBranches.foreach(println)
       println
-      gitDiffAdapter.getCommitIdsBetween(1390471304, 1424523705).foreach(println)
+      gitAdapter.getCommitIdsBetween(1390471304, 1424523705).foreach(println)
       println
-      println(gitDiffAdapter.getCommitIdAfter(1390471304))
+      println(gitAdapter.getCommitIdAfter(1390471304))
       println
-      println(gitDiffAdapter.getCommitIdUntil(1424523705))
+      val lastCommit = gitAdapter.getCommitIdUntil(1424523705)
+      println(lastCommit)
+      println("\n")
+
+      //gitDiffAdapter.getCommitDiff("e2f71aea8dda960a70ef79549c2b51d6615657b1").foreach(println)
+      gitAdapter.getDiff("dae531a17c796862ee", "0ba64d02722329").foreach(println)
     } catch {
       case ex: IOException => println(ex)
     }

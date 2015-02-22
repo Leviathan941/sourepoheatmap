@@ -30,13 +30,16 @@
 
 package org.sourepoheatmap.repository
 
-import java.io.{IOException, File}
+import java.io.{ByteArrayOutputStream, IOException, File}
 
 import org.eclipse.jgit.api.errors.GitAPIException
 import org.eclipse.jgit.api.{ListBranchCommand, Git}
-import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.diff.DiffFormatter
+import org.eclipse.jgit.lib.{ObjectReader, AbbreviatedObjectId, Repository}
+import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+import org.eclipse.jgit.treewalk.{AbstractTreeIterator, EmptyTreeIterator, CanonicalTreeParser}
 import org.sourepoheatmap.repository.GitVaultInfoAdapter.GitVaultException
 
 import scala.collection.JavaConversions._
@@ -54,8 +57,13 @@ class GitVaultInfoAdapter(repoPath: String) {
       new FileRepositoryBuilder().readEnvironment().findGitDir(new File(repoPath))
         .build()
     } catch {
-      case ex: java.lang.Exception => throw new GitVaultException("Failed to find Git repository " + repoPath)
+      case ex: java.lang.Exception => throw new GitVaultException(
+        String.format("Failed to find Git repository %s.\n%s", repoPath, ex.getMessage))
     }
+
+  def terminate(): Unit = {
+    mRepo.close()
+  }
 
   def getHeadBranchFullName(): String =
     getHeadBranch(_.getFullBranch)
@@ -64,13 +72,12 @@ class GitVaultInfoAdapter(repoPath: String) {
     getHeadBranch(_.getBranch)
 
   private def getHeadBranch(getBranchName: Repository => String): String = {
-    mRepo.incrementOpen
-
+    mRepo.incrementOpen()
     try
       getBranchName(mRepo)
     catch {
       case ex: IOException => throw new GitVaultException("Failed to get HEAD branch name: " + ex.getMessage)
-    } finally mRepo.close
+    } finally mRepo.close()
   }
 
   def getLocalBranches(): List[String] =
@@ -83,14 +90,14 @@ class GitVaultInfoAdapter(repoPath: String) {
     getBranches(_.setListMode(ListBranchCommand.ListMode.ALL))
 
   private def getBranches(getBranchList: ListBranchCommand => ListBranchCommand = (cmd => cmd)): List[String] = {
-    mRepo.incrementOpen
+    mRepo.incrementOpen()
     try {
       val git = new Git(mRepo)
       val branchList = getBranchList(git.branchList).call.toList
       for (branch <- branchList) yield branch.getName
     } catch {
       case ex: GitAPIException => throw new GitVaultException("Failed to get branches: " + ex.getMessage)
-    } finally mRepo.close
+    } finally mRepo.close()
   }
 
   def getCommitIdAfter(since: Int): String = {
@@ -112,7 +119,7 @@ class GitVaultInfoAdapter(repoPath: String) {
   }
 
   private def getCommitIds(commitCondition: RevCommit => Boolean): List[String] = {
-    mRepo.incrementOpen
+    mRepo.incrementOpen()
     try {
       val git = new Git(mRepo)
       val commitsBetween = git.log.call.toList
@@ -125,24 +132,112 @@ class GitVaultInfoAdapter(repoPath: String) {
     } finally mRepo.close()
   }
 
-//  def printDiff(): Unit = {
-//    mRepo.incrementOpen
+  def getDiff(commitId: String): List[String] =
+    getDiffFormatted(commitId, _ => ())
+
+  def getDiff(oldCommitId: String, newCommitId: String): List[String] = {
+    requireValidCommitHexes(oldCommitId, newCommitId)
+
+    getDiffFormatted(
+      getTreeIterator(oldCommitId, getCanonicalTreeIterator),
+      getTreeIterator(newCommitId, getCanonicalTreeIterator),
+      _ => ()
+    )
+  }
+
+  private def getDiffFormatted(commitId: String, formatConfig: DiffFormatter => Unit): List[String] = {
+    requireValidCommitHexes(commitId)
+
+    getDiffFormatted(
+      getTreeIterator(commitId, getParentTreeInterator),
+      getTreeIterator(commitId, getCanonicalTreeIterator),
+      formatConfig
+    )
+  }
+
+  private def getDiffFormatted(
+    oldTreeIter: RevWalk => AbstractTreeIterator,
+    newTreeIter: RevWalk => AbstractTreeIterator,
+    formatConfig: DiffFormatter => Unit
+  ): List[String] = {
+
+    mRepo.incrementOpen()
+    val revWalk = new RevWalk(mRepo)
+    val outStream = new ByteArrayOutputStream
+    val diffFormatter = new DiffFormatter(outStream)
+    try {
+      diffFormatter.setRepository(mRepo)
+      formatConfig(diffFormatter)
+
+      val diffEntries = diffFormatter.scan(
+        oldTreeIter(revWalk),
+        newTreeIter(revWalk)
+      ).toList
+
+      for (entry <- diffEntries) yield {
+        outStream.reset()
+        diffFormatter.format(entry)
+        outStream.toString
+      }
+    } catch {
+      case ex: java.lang.Exception => throw new GitVaultException("Failed to get changes: " + ex.getMessage)
+    } finally {
+      diffFormatter.close()
+      revWalk.close()
+      mRepo.close()
+    }
+  }
+
+//  def getInsertionLines(commitId: String): Unit = {
+//    requireValidCommitHex(commitId)
 //
-//    val reader = mRepo.newObjectReader()
-//    val head = mRepo.resolve(Constants.HEAD)
-//    val preHead = mRepo.resolve(Constants.HEAD + "~1")
-//    val out = new ByteArrayOutputStream
-//    val df = new DiffFormatter(out)
-//    df.setRepository(mRepo)
-//    val entries = df.scan(preHead, head)
-//    for (entry <- entries) {
-//      df.setContext(0)
-//      df.format(entry)
+//    mRepo.incrementOpen()
+//    val revWalk = new RevWalk(mRepo)
+//    try {
+//      val newCommitId = revWalk.parseCommit(mRepo.resolve(commitId))
 //
-//      println(out.toString)
-//      out.reset()
+//      val outStream = new ByteArrayOutputStream
+//      val diffFormatter = new DiffFormatter(outStream)
+//      diffFormatter.setRepository(mRepo)
+//      diffFormatter.setDetectRenames(false)
+//      diffFormatter.setContext(0)
+//      val diffEntries = diffFormatter.scan(
+//        getParentTreeInterator(newCommitId, revWalk),
+//        getTreeIterator(newCommitId, revWalk))
+//
+//      for (entry <- diffEntries) {
+//        outStream.reset()
+//        diffFormatter.format(entry)
+//        println(outStream.toString)
+//      }
+//
+//      diffFormatter.close()
+//    } catch {
+//      case ex: java.lang.Exception => throw new GitVaultException("Failed to get changes: " + ex.getMessage)
+//    } finally {
+//      mRepo.close()
+//      revWalk.close()
 //    }
 //  }
+
+  private def getTreeIterator(commitId: String, treeIter: (RevCommit, ObjectReader) => AbstractTreeIterator)
+      (revWalk: RevWalk): AbstractTreeIterator =
+    treeIter(revWalk.parseCommit(mRepo.resolve(commitId)), revWalk.getObjectReader)
+
+  private def getParentTreeInterator(commit: RevCommit, objReader: ObjectReader): AbstractTreeIterator = {
+    if (commit.getParentCount > 0)
+      getCanonicalTreeIterator(commit.getParent(0), objReader)
+    else
+      new EmptyTreeIterator
+  }
+
+  private def getCanonicalTreeIterator(commit: RevCommit, objReader: ObjectReader): AbstractTreeIterator =
+    new CanonicalTreeParser(null, objReader, commit.getTree)
+
+  private def requireValidCommitHexes(hexes: String*): Unit = {
+    for (hex <- hexes)
+      require(AbbreviatedObjectId.isId(hex), "Argument should be valid commit hex")
+  }
 }
 
 object GitVaultInfoAdapter {
