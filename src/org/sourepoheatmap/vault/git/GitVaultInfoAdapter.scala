@@ -28,28 +28,28 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.sourepoheatmap.repository
+package org.sourepoheatmap.vault.git
 
-import java.io.{ByteArrayOutputStream, IOException, File}
+import java.io.{ByteArrayOutputStream, File, IOException}
 
 import org.eclipse.jgit.api.errors.GitAPIException
-import org.eclipse.jgit.api.{ListBranchCommand, Git}
+import org.eclipse.jgit.api.{Git, ListBranchCommand}
 import org.eclipse.jgit.diff.DiffFormatter
-import org.eclipse.jgit.lib.{ObjectReader, AbbreviatedObjectId, Repository}
-import org.eclipse.jgit.revwalk.RevWalk
-import org.eclipse.jgit.revwalk.RevCommit
+import org.eclipse.jgit.lib.{AbbreviatedObjectId, ObjectReader, Repository}
+import org.eclipse.jgit.revwalk.{RevCommit, RevWalk}
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
-import org.eclipse.jgit.treewalk.{AbstractTreeIterator, EmptyTreeIterator, CanonicalTreeParser}
-import org.sourepoheatmap.repository.GitVaultInfoAdapter.GitVaultException
+import org.eclipse.jgit.treewalk.{AbstractTreeIterator, CanonicalTreeParser, EmptyTreeIterator}
+import org.sourepoheatmap.vault.VaultInfoAdapter
+import org.sourepoheatmap.vault.git.GitVaultInfoAdapter.GitVaultException
 
 import scala.collection.JavaConversions._
 
 /**
- * Class for providing ability to get information from a repository.
+ * Class for providing ability to get information from a Git repository.
  *
  * @author Alexey Kuzin <amkuzink@gmail.com>
  */
-class GitVaultInfoAdapter(repoPath: String) {
+class GitVaultInfoAdapter(repoPath: String) extends VaultInfoAdapter {
   require(!repoPath.isEmpty)
 
   private val mRepo: Repository =
@@ -65,10 +65,10 @@ class GitVaultInfoAdapter(repoPath: String) {
     mRepo.close()
   }
 
-  def getHeadBranchFullName(): String =
+  def getCurrentBranchFullName: String =
     getHeadBranch(_.getFullBranch)
 
-  def getHeadBranchName(): String =
+  def getCurrentBranchName: String =
     getHeadBranch(_.getBranch)
 
   private def getHeadBranch(getBranchName: Repository => String): String = {
@@ -80,16 +80,16 @@ class GitVaultInfoAdapter(repoPath: String) {
     } finally mRepo.close()
   }
 
-  def getLocalBranches(): List[String] =
+  def getLocalBranches: List[String] =
     getBranches()
 
-  def getRemoteBranches(): List[String] =
+  def getRemoteBranches: List[String] =
     getBranches(_.setListMode(ListBranchCommand.ListMode.REMOTE))
 
-  def getAllBranches(): List[String] =
+  def getBranches: List[String] =
     getBranches(_.setListMode(ListBranchCommand.ListMode.ALL))
 
-  private def getBranches(getBranchList: ListBranchCommand => ListBranchCommand = (cmd => cmd)): List[String] = {
+  private def getBranches(getBranchList: ListBranchCommand => ListBranchCommand = cmd => cmd): List[String] = {
     mRepo.incrementOpen()
     try {
       val git = new Git(mRepo)
@@ -115,7 +115,7 @@ class GitVaultInfoAdapter(repoPath: String) {
   }
 
   def getCommitIdsBetween(since: Int, until: Int): List[String] = {
-    getCommitIds(commit => (commit.getCommitTime >= since && commit.getCommitTime <= until))
+    getCommitIds(commit => commit.getCommitTime >= since && commit.getCommitTime <= until)
   }
 
   private def getCommitIds(commitCondition: RevCommit => Boolean): List[String] = {
@@ -123,7 +123,7 @@ class GitVaultInfoAdapter(repoPath: String) {
     try {
       val git = new Git(mRepo)
       val commitsBetween = git.log.call.toList
-        .filter(commitCondition(_))
+        .filter(commitCondition)
         .sortWith(_.getCommitTime < _.getCommitTime)
       for (commit <- commitsBetween) yield
         commit.getName

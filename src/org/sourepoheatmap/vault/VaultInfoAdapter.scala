@@ -28,39 +28,24 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.sourepoheatmap.application
-
-import java.io.IOException
-
-import org.sourepoheatmap.vault.VaultInfoAdapter
-import org.sourepoheatmap.vault.git.GitVaultInfoAdapter
+package org.sourepoheatmap.vault
 
 /**
- * Placeholder to test other parts.
+ * Trait for providing ability to get information from a repository.
  *
  * @author Alexey Kuzin <amkuzink@gmail.com>
  */
-object Application {
-  def main(args: Array[String]) {
-    val vaultAdapter: VaultInfoAdapter = new GitVaultInfoAdapter("/home/leviathan/projects/melange")
-    try {
-      println(vaultAdapter.getCurrentBranchFullName)
-      println(vaultAdapter.getCurrentBranchName)
-      println
-      vaultAdapter.getBranches.foreach(println)
-      println
-      vaultAdapter.getCommitIdsBetween(1390471304, 1424523705).foreach(println)
-      println
-      println(vaultAdapter.getCommitIdAfter(1390471304))
-      println
-      val lastCommit = vaultAdapter.getCommitIdUntil(1424523705)
-      println(lastCommit)
-      println("\n")
+trait VaultInfoAdapter {
+  def terminate(): Unit
 
-      //gitDiffAdapter.getCommitDiff("e2f71aea8dda960a70ef79549c2b51d6615657b1").foreach(println)
-      vaultAdapter.getDiff("dae531a17c796862ee", "0ba64d02722329").foreach(println)
-    } catch {
-      case ex: IOException => println(ex)
-    }
-  }
+  def getCurrentBranchFullName: String
+  def getCurrentBranchName: String
+  def getBranches: List[String]
+
+  def getCommitIdAfter(since: Int): String
+  def getCommitIdUntil(until: Int): String
+  def getCommitIdsBetween(since: Int, until: Int): List[String]
+
+  def getDiff(commitId: String): List[String]
+  def getDiff(oldCommitId: String, newCommitId: String): List[String]
 }
