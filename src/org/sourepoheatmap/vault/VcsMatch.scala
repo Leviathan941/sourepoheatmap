@@ -28,40 +28,14 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.sourepoheatmap.application
-
-import org.sourepoheatmap.vault.VaultInfoAdapter
-import org.sourepoheatmap.vault.git.GitVaultInfoAdapter
+package org.sourepoheatmap.vault
 
 /**
- * Placeholder to test other parts.
+ * Each VaultInfoAdapter implementation should extend this trait to
+ * make possible usage of pattern matching to detect what VCS the path under.
  *
  * @author Alexey Kuzin <amkuzink@gmail.com>
  */
-object Application {
-  def main(args: Array[String]) {
-    val Some(vaultAdapter) = VaultInfoAdapter("/home/leviathan/projects/")
-
-    println(vaultAdapter.getCurrentBranchName)
-    println()
-    vaultAdapter.getBranches.foreach(println)
-    println()
-    vaultAdapter.getCommitIdsBetween(1390471304, 1424523705).foreach(println)
-
-    println()
-    vaultAdapter.getCommitIdAfter(1390471304) match {
-      case Some(s) => println("Commit id after: " + s)
-      case None => println("No such commit")
-    }
-    println()
-
-    val lastCommit = vaultAdapter.getCommitIdUntil(1424523705)
-    lastCommit match {
-      case Some(s) => println("Commit id until: " + s)
-      case None => println("No such commit")
-    }
-    println("\n")
-
-    vaultAdapter.getDiff("dae531a17c796862ee", "0ba64d02722329").foreach(println)
-  }
+trait VcsMatch {
+  def unapply(path: String): Boolean
 }

@@ -39,8 +39,8 @@ import org.eclipse.jgit.lib.{AbbreviatedObjectId, ObjectReader, Repository}
 import org.eclipse.jgit.revwalk.{RevCommit, RevWalk}
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.{AbstractTreeIterator, CanonicalTreeParser, EmptyTreeIterator}
-import org.sourepoheatmap.vault.VaultInfoAdapter
-import org.sourepoheatmap.vault.git.GitVaultInfoAdapter.GitVaultException
+import org.sourepoheatmap.vault.{VcsMatch, VaultInfoAdapter}
+import org.sourepoheatmap.vault.VaultInfoAdapter.VaultException
 
 import scala.collection.JavaConversions._
 
@@ -49,26 +49,27 @@ import scala.collection.JavaConversions._
  *
  * @author Alexey Kuzin <amkuzink@gmail.com>
  */
-class GitVaultInfoAdapter(repoPath: String) extends VaultInfoAdapter {
-  require(!repoPath.isEmpty)
+class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
+  require(!path.isEmpty)
 
   private val mRepo: Repository =
     try {
-      new FileRepositoryBuilder().readEnvironment().findGitDir(new File(repoPath))
+      new FileRepositoryBuilder().readEnvironment().findGitDir(new File(path))
         .build()
     } catch {
-      case ex: java.lang.Exception => throw new GitVaultException("Failed to find Git repository %s.\n%s".format(
-        repoPath, ex.getMessage))
+      case ex: java.lang.Exception => throw new VaultException("Failed to find Git repository %s.\n%s".format(
+        path, ex.getMessage))
     }
+  println(mRepo.getDirectory.getPath)
 
   def terminate(): Unit = {
     mRepo.close()
   }
 
-  def getCurrentBranchFullName: String =
+  def getCurrentBranchName: String =
     getHeadBranch(_.getFullBranch)
 
-  def getCurrentBranchName: String =
+  def getCurrentBranchShortenName: String =
     getHeadBranch(_.getBranch)
 
   private def getHeadBranch(getBranchName: Repository => String): String = {
@@ -76,7 +77,7 @@ class GitVaultInfoAdapter(repoPath: String) extends VaultInfoAdapter {
     try
       getBranchName(mRepo)
     catch {
-      case ex: IOException => throw new GitVaultException("Failed to get HEAD branch name: " + ex.getMessage)
+      case ex: IOException => throw new VaultException("Failed to get HEAD branch name: " + ex.getMessage)
     } finally mRepo.close()
   }
 
@@ -96,7 +97,7 @@ class GitVaultInfoAdapter(repoPath: String) extends VaultInfoAdapter {
       val branchList = getBranchList(git.branchList).call.toList
       for (branch <- branchList) yield branch.getName
     } catch {
-      case ex: GitAPIException => throw new GitVaultException("Failed to get branches: " + ex.getMessage)
+      case ex: GitAPIException => throw new VaultException("Failed to get branches: " + ex.getMessage)
     } finally mRepo.close()
   }
 
@@ -129,7 +130,7 @@ class GitVaultInfoAdapter(repoPath: String) extends VaultInfoAdapter {
       for (commit <- commitsBetween) yield
         commit.getName
     } catch {
-      case ex: java.lang.Exception => throw new GitVaultException("Failed to get commit IDs: " + ex.getMessage)
+      case ex: java.lang.Exception => throw new VaultException("Failed to get commit IDs: " + ex.getMessage)
     } finally mRepo.close()
   }
 
@@ -181,7 +182,7 @@ class GitVaultInfoAdapter(repoPath: String) extends VaultInfoAdapter {
         outStream.toString
       }
     } catch {
-      case ex: java.lang.Exception => throw new GitVaultException("Failed to get changes: " + ex.getMessage)
+      case ex: java.lang.Exception => throw new VaultException("Failed to get changes: " + ex.getMessage)
     } finally {
       diffFormatter.close()
       revWalk.close()
@@ -241,6 +242,7 @@ class GitVaultInfoAdapter(repoPath: String) extends VaultInfoAdapter {
   }
 }
 
-object GitVaultInfoAdapter {
-  class GitVaultException(msg: String) extends Exception(msg)
+object GitVaultInfoAdapter extends VcsMatch {
+  override def unapply(path: String): Boolean =
+    new FileRepositoryBuilder().readEnvironment().findGitDir(new File(path)).getGitDir != null
 }

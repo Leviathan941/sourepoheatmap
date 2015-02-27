@@ -30,6 +30,8 @@
 
 package org.sourepoheatmap.vault
 
+import org.sourepoheatmap.vault.git.GitVaultInfoAdapter
+
 /**
  * Trait for providing ability to get information from a repository.
  *
@@ -38,7 +40,6 @@ package org.sourepoheatmap.vault
 trait VaultInfoAdapter {
   def terminate(): Unit
 
-  def getCurrentBranchFullName: String
   def getCurrentBranchName: String
   def getBranches: List[String]
 
@@ -48,4 +49,13 @@ trait VaultInfoAdapter {
 
   def getDiff(commitId: String): List[String]
   def getDiff(oldCommitId: String, newCommitId: String): List[String]
+}
+
+object VaultInfoAdapter {
+  class VaultException(msg: String) extends Exception(msg)
+
+  def apply(vaultPath: String): Option[VaultInfoAdapter] = vaultPath match {
+    case GitVaultInfoAdapter() => Some(new GitVaultInfoAdapter(vaultPath))
+    case _ => None
+  }
 }
