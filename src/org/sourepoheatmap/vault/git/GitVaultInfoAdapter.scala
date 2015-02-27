@@ -57,8 +57,8 @@ class GitVaultInfoAdapter(repoPath: String) extends VaultInfoAdapter {
       new FileRepositoryBuilder().readEnvironment().findGitDir(new File(repoPath))
         .build()
     } catch {
-      case ex: java.lang.Exception => throw new GitVaultException(
-        String.format("Failed to find Git repository %s.\n%s", repoPath, ex.getMessage))
+      case ex: java.lang.Exception => throw new GitVaultException("Failed to find Git repository %s.\n%s".format(
+        repoPath, ex.getMessage))
     }
 
   def terminate(): Unit = {
@@ -100,21 +100,22 @@ class GitVaultInfoAdapter(repoPath: String) extends VaultInfoAdapter {
     } finally mRepo.close()
   }
 
-  def getCommitIdAfter(since: Int): String = {
-    getCommitId(_.getCommitTime >= since, _(0))
+  def getCommitIdAfter(since: Int): Option[String] = {
+    getCommitId(_.getCommitTime >= since, _.head)
   }
 
-  def getCommitIdUntil(until: Int): String = {
-    getCommitId(_.getCommitTime <= until, _.reverse(0))
+  def getCommitIdUntil(until: Int): Option[String] = {
+    getCommitId(_.getCommitTime <= until, _.reverse.head)
   }
 
   private def getCommitId(commitCondition: RevCommit => Boolean,
-                          selectElement: List[String] => String): String = {
+                          selectElement: List[String] => String): Option[String] = {
     val commits = getCommitIds(commitCondition)
-    if (commits.size == 0) "" else selectElement(commits)
+    if (commits.isEmpty) None else Some(selectElement(commits))
   }
 
   def getCommitIdsBetween(since: Int, until: Int): List[String] = {
+    require(until >= since, "'until' time should be greater than 'since'")
     getCommitIds(commit => commit.getCommitTime >= since && commit.getCommitTime <= until)
   }
 

@@ -30,8 +30,6 @@
 
 package org.sourepoheatmap.application
 
-import java.io.IOException
-
 import org.sourepoheatmap.vault.VaultInfoAdapter
 import org.sourepoheatmap.vault.git.GitVaultInfoAdapter
 
@@ -42,25 +40,29 @@ import org.sourepoheatmap.vault.git.GitVaultInfoAdapter
  */
 object Application {
   def main(args: Array[String]) {
-    val vaultAdapter: VaultInfoAdapter = new GitVaultInfoAdapter("/home/leviathan/projects/melange")
-    try {
-      println(vaultAdapter.getCurrentBranchFullName)
-      println(vaultAdapter.getCurrentBranchName)
-      println
-      vaultAdapter.getBranches.foreach(println)
-      println
-      vaultAdapter.getCommitIdsBetween(1390471304, 1424523705).foreach(println)
-      println
-      println(vaultAdapter.getCommitIdAfter(1390471304))
-      println
-      val lastCommit = vaultAdapter.getCommitIdUntil(1424523705)
-      println(lastCommit)
-      println("\n")
+    val vaultAdapter: VaultInfoAdapter = new GitVaultInfoAdapter("/Users/leveafan941/Documents/projects/melange")
 
-      //gitDiffAdapter.getCommitDiff("e2f71aea8dda960a70ef79549c2b51d6615657b1").foreach(println)
-      vaultAdapter.getDiff("dae531a17c796862ee", "0ba64d02722329").foreach(println)
-    } catch {
-      case ex: IOException => println(ex)
+    println(vaultAdapter.getCurrentBranchFullName)
+    println(vaultAdapter.getCurrentBranchName)
+    println()
+    vaultAdapter.getBranches.foreach(println)
+    println()
+    vaultAdapter.getCommitIdsBetween(1390471304, 1424523705).foreach(println)
+
+    println()
+    vaultAdapter.getCommitIdAfter(1390471304) match {
+      case Some(s) => println("Commit id after: " + s)
+      case None => println("No such commit")
     }
+    println()
+
+    val lastCommit = vaultAdapter.getCommitIdUntil(1424523705)
+    lastCommit match {
+      case Some(s) => println("Commit id until: " + s)
+      case None => println("No such commit")
+    }
+    println("\n")
+
+    vaultAdapter.getDiff("dae531a17c796862ee", "0ba64d02722329").foreach(println)
   }
 }

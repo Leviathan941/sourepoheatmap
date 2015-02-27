@@ -42,8 +42,8 @@ trait VaultInfoAdapter {
   def getCurrentBranchName: String
   def getBranches: List[String]
 
-  def getCommitIdAfter(since: Int): String
-  def getCommitIdUntil(until: Int): String
+  def getCommitIdAfter(since: Int): Option[String]
+  def getCommitIdUntil(until: Int): Option[String]
   def getCommitIdsBetween(since: Int, until: Int): List[String]
 
   def getDiff(commitId: String): List[String]
