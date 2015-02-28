@@ -32,11 +32,10 @@ package org.sourepoheatmap.vault
 
 import org.sourepoheatmap.vault.git.GitVaultInfoAdapter
 
-/**
- * Trait for providing ability to get information from a repository.
- *
- * @author Alexey Kuzin <amkuzink@gmail.com>
- */
+/** Trait for providing ability to get information from a repository.
+  *
+  * @author Alexey Kuzin <amkuzink@gmail.com>
+  */
 trait VaultInfoAdapter {
   def terminate(): Unit
 

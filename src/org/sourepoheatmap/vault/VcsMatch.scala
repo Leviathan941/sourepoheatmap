@@ -30,12 +30,11 @@
 
 package org.sourepoheatmap.vault
 
-/**
- * Each VaultInfoAdapter implementation should extend this trait to
- * make possible usage of pattern matching to detect what VCS the path under.
- *
- * @author Alexey Kuzin <amkuzink@gmail.com>
- */
+/** Each [[VaultInfoAdapter]] implementation should extend this trait to
+  * make possible usage of pattern matching to detect what VCS the path under.
+  *
+  * @author Alexey Kuzin <amkuzink@gmail.com>
+  */
 trait VcsMatch {
   def unapply(path: String): Boolean
 }

@@ -31,16 +31,15 @@
 package org.sourepoheatmap.application
 
 import org.sourepoheatmap.vault.VaultInfoAdapter
-import org.sourepoheatmap.vault.git.GitVaultInfoAdapter
+import org.sourepoheatmap.vault.git.GitDiffParser
 
-/**
- * Placeholder to test other parts.
- *
- * @author Alexey Kuzin <amkuzink@gmail.com>
- */
+/** Placeholder to test other parts.
+  *
+  * @author Alexey Kuzin <amkuzink@gmail.com>
+  */
 object Application {
   def main(args: Array[String]) {
-    val Some(vaultAdapter) = VaultInfoAdapter("/home/leviathan/projects/")
+    val Some(vaultAdapter) = VaultInfoAdapter("/home/leviathan/projects/melange")
 
     println(vaultAdapter.getCurrentBranchName)
     println()
@@ -62,6 +61,38 @@ object Application {
     }
     println("\n")
 
-    vaultAdapter.getDiff("dae531a17c796862ee", "0ba64d02722329").foreach(println)
+    val diff = vaultAdapter.getDiff("4bd442c137fc0", "0ba64d027223")
+    diff.foreach(println)
+
+    println("\nPARSED DIFF:")
+    val gitDiffList = GitDiffParser(diff.mkString)
+    for (diff <- gitDiffList) printGitDiff(diff)
+  }
+
+  private def printGitDiff(gitDiff: GitDiffParser.GitDiff): Unit = {
+    println("Old file name: " + gitDiff.oldFile)
+    println("New file name: " + gitDiff.newFile)
+    gitDiff.fileChange match {
+      case file: GitDiffParser.NewFile => println("new file mode " + file.mode)
+      case file: GitDiffParser.DeletedFile => println("deleted file mode " + file.mode)
+      case file: GitDiffParser.RenamedFile => println("rename from %s\nrename to %s".
+        format(file.fromPath, file.toPath))
+      case file: GitDiffParser.CopiedFile => println("copy from %s\ncopy to %s".
+        format(file.fromPath, file.toPath))
+      case _ => println("modified file")
+    }
+
+    for (chunk <- gitDiff.chunks) chunk match {
+      case text: GitDiffParser.TextChunk => {
+        println(text.rangeInformation)
+        for (line <- text.changeLines) line match {
+          case l: GitDiffParser.AddedLine => println("+" + l.line)
+          case l: GitDiffParser.DeletedLine => println("-" + l.line)
+          case l: GitDiffParser.ContextLine => println(" " + l.line)
+          case l: GitDiffParser.WarningLine => println("\\ " + l.line)
+        }
+      }
+      case GitDiffParser.BinaryChunk => println("Binary files differ")
+    }
   }
 }

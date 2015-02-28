@@ -44,11 +44,10 @@ import org.sourepoheatmap.vault.VaultInfoAdapter.VaultException
 
 import scala.collection.JavaConversions._
 
-/**
- * Class for providing ability to get information from a Git repository.
- *
- * @author Alexey Kuzin <amkuzink@gmail.com>
- */
+/** Class for providing ability to get information from a Git repository.
+  *
+  * @author Alexey Kuzin <amkuzink@gmail.com>
+  */
 class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
   require(!path.isEmpty)
 
