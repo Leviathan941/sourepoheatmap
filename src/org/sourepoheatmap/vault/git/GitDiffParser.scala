@@ -37,6 +37,42 @@ import scala.util.parsing.combinator.RegexParsers
   * Only simple git diff format is supported at the moment.
   * Combined and other formats are not supported.
   *
+  * =Formal grammar=
+  * allDiffs        ::= { fileDiff }
+  * fileDiff        ::= gitHeader extendedHeader [ unifiedHeader diffChunks ]
+  * gitHeader       ::= "diff --git a/" filename [ " b/" filename ] newline
+  * extendedHeader  ::= [ modeChanged ] [ similarity ] [ copiedFile | renamedFile
+  *                     | deletedFile | newFile ] index
+  * unifiedHeader   ::= "--- " [ "a/" ] filename newline
+  *                     "+++ " [ "b/" ] filename newline
+  * diffChunks      ::= { changeChunk }
+  * filename        ::= """[&#94;*&%\s]+"""
+  * newline         ::= """\r?\n"""
+  * modeChanged     ::= "old mode " mode newline
+  *                     "new mode " mode newline
+  * similarity      ::= ( "similarity" | "dissimilarity" ) "index " number "%" newline
+  * copiedFile      ::= "copy from " filename newline
+  *                     "copy to " filename newline
+  * renamedFile     ::= "rename from " filename newline
+  *                     "rename to " filename newline
+  * deletedFile     ::= "deleted file mode " mode newline
+  * newFile         ::= "new file mode " mode newline
+  * index           ::= "index " hash ".." hash [ " " mode ] newline
+  * changeChunk     ::= binaryChange | ( chunkHeader { lineChange } )
+  * mode            ::= """\d{6}"""
+  * number          ::= """\d+"""
+  * hash            ::= """[0-9a-f]{7,}"""
+  * binaryChange    ::= "Binary files " [ "a/" ] filename [ " b/" ] filename
+  *                     " differ" newline
+  * chunkHeader     ::= rangeInfo [ contextLine ] [ newline ]
+  * lineChange      ::= warningLine | contextLine | addedLine | deletedLine
+  * rangeInfo       ::= "@@ -" number [ "," number ] " +" number [ "," number ] " @@"
+  * warningLine     ::= "\ " commonLine newline
+  * contextLine     ::= " " commonLine newline
+  * addedLine       ::= "+" commonLine newline
+  * deletedLine     ::= "-" commonLine newline
+  * commonLine      ::= """.*"""
+  *
   * @see [[https://www.kernel.org/pub/software/scm/git/docs/git-diff.html Git diff man]]
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
@@ -69,8 +105,8 @@ private[git] object GitDiffParser extends RegexParsers {
     ChangeChunk
   case object BinaryChunk extends ChangeChunk
 
-  def allDiffs: Parser[List[FileDiff]] = rep1(gitDiff)
-  def gitDiff: Parser[FileDiff] = gitDiffHeader ~ extendedHeader ~ opt(unifiedDiffHeader ~> diffChunks) ^^
+  def allDiffs: Parser[List[FileDiff]] = rep1(fileDiff)
+  def fileDiff: Parser[FileDiff] = gitHeader ~ extendedHeader ~ opt(unifiedHeader ~> diffChunks) ^^
     { case files ~ change ~ chunks => FileDiff(files._1, files._2, change, chunks getOrElse Nil)}
   def diffChunks: Parser[List[ChangeChunk]] = rep1(changeChunk)
   def changeChunk: Parser[ChangeChunk] = binaryChange | (chunkHeader ~ rep1(lineChange)) ^^ {
@@ -78,19 +114,19 @@ private[git] object GitDiffParser extends RegexParsers {
     case bin => BinaryChunk
   }
 
-  def gitDiffHeader: Parser[(String, String)] =
+  def gitHeader: Parser[(String, String)] =
     "diff --git" ~ " " ~ oldFilePrefix ~> filename ~ (" " ~ newFilePrefix ~> filename) <~ newline ^^
       { case f1 ~ f2 => (f1, f2) }
   def extendedHeader: Parser[FileChange] =
     opt(modeChanged) ~ opt(similarity) ~> opt(copiedFile | renamedFile | deletedFile | newFile) <~ index ^^
       { _.getOrElse(ModifiedFile) }
-  def unifiedDiffHeader: Parser[(String, String)] =
+  def unifiedHeader: Parser[(String, String)] =
     "--- " ~ opt(oldFilePrefix) ~> filename ~ (newline ~
     "+++ " ~ opt(newFilePrefix) ~> filename) <~ newline ^^ { case f1 ~ f2 => (f1, f2) }
   def chunkHeader: Parser[(RangeInfo, ContextLine)] = rangeInfo ~ opt(contextLine) <~ opt(newline) ^^
     { case ri ~ ctx => (ri, ctx getOrElse ContextLine("")) }
 
-  def modeChanged: Parser[(Int, Int)] = "old mode " ~> mode ~ (newline ~ "new mode " ~> mode) <~ "%" ~ newline ^^
+  def modeChanged: Parser[(Int, Int)] = "old mode " ~> mode ~ (newline ~ "new mode " ~> mode) <~ newline ^^
     { case mode1 ~ mode2 => (mode1, mode2) }
   def similarity: Parser[Int] = ("similarity " | "dissimilarity ") ~ "index " ~> number <~ "%" ~ newline
   def copiedFile: Parser[CopiedFile] = "copy from " ~> filename ~
@@ -115,10 +151,10 @@ private[git] object GitDiffParser extends RegexParsers {
   def commonLine: Parser[String] = """.*""".r
 
   def lineChange: Parser[LineChange] = warningLine | contextLine | addedLine | deletedLine
+  def warningLine: Parser[LineChange] = "\\ " ~> commonLine <~ newline ^^ WarningLine
   def contextLine: Parser[ContextLine] = " " ~> commonLine <~ newline ^^ ContextLine
   def addedLine: Parser[AddedLine] = "+" ~> commonLine <~ newline ^^ AddedLine
   def deletedLine: Parser[DeletedLine] = "-" ~> commonLine <~ newline ^^ DeletedLine
-  def warningLine: Parser[LineChange] = "\\ " ~> commonLine <~ newline ^^ WarningLine
 
   def oldFilePrefix = "a/"
   def newFilePrefix = "b/"
