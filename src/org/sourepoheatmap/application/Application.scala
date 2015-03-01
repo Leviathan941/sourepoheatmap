@@ -61,38 +61,47 @@ object Application {
     }
     println("\n")
 
-    val diff = vaultAdapter.getDiff("4bd442c137fc0", "0ba64d027223")
-    diff.foreach(println)
+    val diff1 = vaultAdapter.getDiff("0ba64d027223")
+    diff1.foreach(println)
 
-    println("\nPARSED DIFF:")
-    val gitDiffList = GitDiffParser(diff.mkString)
-    for (diff <- gitDiffList) printGitDiff(diff)
+    val diff2 = vaultAdapter.getDiff("4bd442c137fc0", "0ba64d027223")
+    diff2.foreach(println)
+
+    println("\n")
+    println("Added lines: " + vaultAdapter.getAddedCount("0ba64d027223"))
+    println("Removed lines: " + vaultAdapter.getRemovedCount("0ba64d027223"))
+    println("Changed lines: " + vaultAdapter.getChangedCount("0ba64d027223"))
+    println("Changed lines between %s and %s: %d".format(
+      "6cc0951f3bcd9aae",
+      "8b418af7fb7d8b1",
+      vaultAdapter.getChangedCount("6cc0951f3bcd9aae", "8b418af7fb7d8b1"))
+    )
   }
 
-  private def printGitDiff(gitDiff: GitDiffParser.GitDiff): Unit = {
-    println("Old file name: " + gitDiff.oldFile)
-    println("New file name: " + gitDiff.newFile)
-    gitDiff.fileChange match {
-      case file: GitDiffParser.NewFile => println("new file mode " + file.mode)
-      case file: GitDiffParser.DeletedFile => println("deleted file mode " + file.mode)
-      case file: GitDiffParser.RenamedFile => println("rename from %s\nrename to %s".
-        format(file.fromPath, file.toPath))
-      case file: GitDiffParser.CopiedFile => println("copy from %s\ncopy to %s".
-        format(file.fromPath, file.toPath))
-      case _ => println("modified file")
-    }
-
-    for (chunk <- gitDiff.chunks) chunk match {
-      case text: GitDiffParser.TextChunk => {
-        println(text.rangeInformation)
-        for (line <- text.changeLines) line match {
-          case l: GitDiffParser.AddedLine => println("+" + l.line)
-          case l: GitDiffParser.DeletedLine => println("-" + l.line)
-          case l: GitDiffParser.ContextLine => println(" " + l.line)
-          case l: GitDiffParser.WarningLine => println("\\ " + l.line)
-        }
-      }
-      case GitDiffParser.BinaryChunk => println("Binary files differ")
-    }
-  }
+//  private def printGitDiff(gitDiff: GitDiffParser.FileDiff): Unit = {
+//    println("Old file name: " + gitDiff.oldFile)
+//    println("New file name: " + gitDiff.newFile)
+//    gitDiff.fileChange match {
+//      case file: GitDiffParser.NewFile => println("new file mode " + file.mode)
+//      case file: GitDiffParser.DeletedFile => println("deleted file mode " + file.mode)
+//      case file: GitDiffParser.RenamedFile => println("rename from %s\nrename to %s".
+//        format(file.fromPath, file.toPath))
+//      case file: GitDiffParser.CopiedFile => println("copy from %s\ncopy to %s".
+//        format(file.fromPath, file.toPath))
+//      case _ => println("modified file")
+//    }
+//
+//    for (chunk <- gitDiff.chunks) chunk match {
+//      case text: GitDiffParser.TextChunk => {
+//        println(text.rangeInformation)
+//        for (line <- text.changeLines) line match {
+//          case l: GitDiffParser.AddedLine => println("+" + l.line)
+//          case l: GitDiffParser.DeletedLine => println("-" + l.line)
+//          case l: GitDiffParser.ContextLine => println(" " + l.line)
+//          case l: GitDiffParser.WarningLine => println("\\ " + l.line)
+//        }
+//      }
+//      case GitDiffParser.BinaryChunk => println("Binary files differ")
+//    }
+//  }
 }

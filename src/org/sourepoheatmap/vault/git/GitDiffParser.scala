@@ -37,14 +37,13 @@ import scala.util.parsing.combinator.RegexParsers
   * Only simple git diff format is supported at the moment.
   * Combined and other formats are not supported.
   *
-  *
-  * @see [[https://www.kernel.org/pub/software/scm/git/docs/git-diff.html git diff man]]
+  * @see [[https://www.kernel.org/pub/software/scm/git/docs/git-diff.html Git diff man]]
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-object GitDiffParser extends RegexParsers {
+private[git] object GitDiffParser extends RegexParsers {
   override val skipWhitespace = false
 
-  case class GitDiff(oldFile: String, newFile: String, fileChange: FileChange, chunks: List[ChangeChunk])
+  case class FileDiff(oldFile: String, newFile: String, fileChange: FileChange, chunks: List[ChangeChunk])
 
   sealed trait FileChange
   case class NewFile(mode: Int) extends FileChange
@@ -62,7 +61,7 @@ object GitDiffParser extends RegexParsers {
   case class WarningLine(line: String) extends LineChange
 
   case class RangeInfo(oldStartLine: Int, oldLineNumber: Int, newStartLine: Int, newLineNumber: Int) {
-    override def toString() = "@@ -%d,%d +%d,%d @@".format(oldStartLine, oldLineNumber, newStartLine, newLineNumber)
+    override def toString = "@@ -%d,%d +%d,%d @@".format(oldStartLine, oldLineNumber, newStartLine, newLineNumber)
   }
 
   sealed trait ChangeChunk
@@ -70,9 +69,9 @@ object GitDiffParser extends RegexParsers {
     ChangeChunk
   case object BinaryChunk extends ChangeChunk
 
-  def allDiffs: Parser[List[GitDiff]] = rep1(gitDiff)
-  def gitDiff: Parser[GitDiff] = gitDiffHeader ~ extendedHeader ~ opt(unifiedDiffHeader ~> diffChunks) ^^
-    { case files ~ change ~ chunks => GitDiff(files._1, files._2, change, chunks getOrElse Nil)}
+  def allDiffs: Parser[List[FileDiff]] = rep1(gitDiff)
+  def gitDiff: Parser[FileDiff] = gitDiffHeader ~ extendedHeader ~ opt(unifiedDiffHeader ~> diffChunks) ^^
+    { case files ~ change ~ chunks => FileDiff(files._1, files._2, change, chunks getOrElse Nil)}
   def diffChunks: Parser[List[ChangeChunk]] = rep1(changeChunk)
   def changeChunk: Parser[ChangeChunk] = binaryChange | (chunkHeader ~ rep1(lineChange)) ^^ {
     case h ~ lines => TextChunk(h._1, h._2, lines)
@@ -83,7 +82,7 @@ object GitDiffParser extends RegexParsers {
     "diff --git" ~ " " ~ oldFilePrefix ~> filename ~ (" " ~ newFilePrefix ~> filename) <~ newline ^^
       { case f1 ~ f2 => (f1, f2) }
   def extendedHeader: Parser[FileChange] =
-    opt(modeChanged) ~ opt(similarity) ~> opt(copyFile | renameFile | deleteFile | newFile) <~ index ^^
+    opt(modeChanged) ~ opt(similarity) ~> opt(copiedFile | renamedFile | deletedFile | newFile) <~ index ^^
       { _.getOrElse(ModifiedFile) }
   def unifiedDiffHeader: Parser[(String, String)] =
     "--- " ~ opt(oldFilePrefix) ~> filename ~ (newline ~
@@ -94,17 +93,17 @@ object GitDiffParser extends RegexParsers {
   def modeChanged: Parser[(Int, Int)] = "old mode " ~> mode ~ (newline ~ "new mode " ~> mode) <~ "%" ~ newline ^^
     { case mode1 ~ mode2 => (mode1, mode2) }
   def similarity: Parser[Int] = ("similarity " | "dissimilarity ") ~ "index " ~> number <~ "%" ~ newline
-  def copyFile: Parser[CopiedFile] = "copy from " ~> filename ~
+  def copiedFile: Parser[CopiedFile] = "copy from " ~> filename ~
     (newline ~ "copy to " ~> filename) <~ newline ^^ { case f1 ~ f2 =>  CopiedFile(f1, f2) }
-  def renameFile: Parser[RenamedFile] = "rename from " ~> filename ~
+  def renamedFile: Parser[RenamedFile] = "rename from " ~> filename ~
     (newline ~ "rename to " ~> filename) <~ newline ^^ { case f1 ~ f2 =>  RenamedFile(f1, f2) }
-  def deleteFile: Parser[DeletedFile] = "deleted file mode " ~> mode <~ newline ^^ { m => DeletedFile(m) }
+  def deletedFile: Parser[DeletedFile] = "deleted file mode " ~> mode <~ newline ^^ DeletedFile
   def newFile: Parser[NewFile] = "new file mode " ~> mode <~ newline ^^ NewFile
   def index: Parser[Index] = "index " ~> hash ~ (".." ~> hash) ~ opt(" " ~> mode) <~ newline ^^
     { case h1 ~ h2 ~ m => Index(h1, h2, m getOrElse 0) }
   def rangeInfo: Parser[RangeInfo] = "@@ -" ~> number ~ opt("," ~> number) ~
     (" +" ~> number) ~ opt("," ~> number) <~ " @@" ^^
-    { case sl1 ~ ln1 ~ sl2 ~ ln2 => RangeInfo(sl1, ln1 getOrElse(0), sl2, ln2.getOrElse(0)) }
+    { case sl1 ~ ln1 ~ sl2 ~ ln2 => RangeInfo(sl1, ln1 getOrElse 0, sl2, ln2 getOrElse 0) }
   def binaryChange: Parser[ChangeChunk] = "Binary files " ~ opt(opt(oldFilePrefix) ~ filename ~
     " " ~ opt(newFilePrefix) ~ filename ~ " ") ~ "differ" ~ newline ^^ { case _ => BinaryChunk }
 
@@ -124,7 +123,7 @@ object GitDiffParser extends RegexParsers {
   def oldFilePrefix = "a/"
   def newFilePrefix = "b/"
 
-  def apply(diff: String): List[GitDiff] = parseAll(allDiffs, diff) match {
+  def apply(diff: String): List[FileDiff] = parseAll(allDiffs, diff) match {
     case Success(result, _) => result
     case failure: Failure => throw new DiffParseException(failure.toString())
     case error: Error => throw new DiffParseException("Fatal error: " + error.toString())

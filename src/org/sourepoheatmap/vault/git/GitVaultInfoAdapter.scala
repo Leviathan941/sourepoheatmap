@@ -35,10 +35,11 @@ import java.io.{ByteArrayOutputStream, File, IOException}
 import org.eclipse.jgit.api.errors.GitAPIException
 import org.eclipse.jgit.api.{Git, ListBranchCommand}
 import org.eclipse.jgit.diff.DiffFormatter
-import org.eclipse.jgit.lib.{AbbreviatedObjectId, ObjectReader, Repository}
+import org.eclipse.jgit.lib.{AnyObjectId, AbbreviatedObjectId, Repository}
 import org.eclipse.jgit.revwalk.{RevCommit, RevWalk}
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.{AbstractTreeIterator, CanonicalTreeParser, EmptyTreeIterator}
+import org.sourepoheatmap.vault.git.GitDiffParser.{DeletedLine, AddedLine, LineChange, FileDiff}
 import org.sourepoheatmap.vault.{VcsMatch, VaultInfoAdapter}
 import org.sourepoheatmap.vault.VaultInfoAdapter.VaultException
 
@@ -136,27 +137,34 @@ class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
   def getDiff(commitId: String): List[String] =
     getDiffFormatted(commitId, _ => ())
 
-  def getDiff(oldCommitId: String, newCommitId: String): List[String] = {
-    requireValidCommitHexes(oldCommitId, newCommitId)
-
-    getDiffFormatted(
-      getTreeIterator(oldCommitId, getCanonicalTreeIterator),
-      getTreeIterator(newCommitId, getCanonicalTreeIterator),
-      _ => ()
-    )
-  }
+  def getDiff(oldCommitId: String, newCommitId: String): List[String] =
+    getDiffFormatted(oldCommitId, newCommitId, _ => ())
 
   private def getDiffFormatted(commitId: String, formatConfig: DiffFormatter => Unit): List[String] = {
     requireValidCommitHexes(commitId)
 
-    getDiffFormatted(
-      getTreeIterator(commitId, getParentTreeInterator),
+    getDiffFormattedImpl(
+      getTreeIterator(commitId, getParentTreeIterator),
       getTreeIterator(commitId, getCanonicalTreeIterator),
       formatConfig
     )
   }
 
   private def getDiffFormatted(
+    oldCommitId: String,
+    newCommitId: String,
+    formatConfig: DiffFormatter => Unit
+  ): List[String] = {
+    requireValidCommitHexes(oldCommitId, newCommitId)
+
+    getDiffFormattedImpl(
+      getTreeIterator(oldCommitId, getCanonicalTreeIterator),
+      getTreeIterator(newCommitId, getCanonicalTreeIterator),
+      formatConfig
+    )
+  }
+
+  private def getDiffFormattedImpl(
     oldTreeIter: RevWalk => AbstractTreeIterator,
     newTreeIter: RevWalk => AbstractTreeIterator,
     formatConfig: DiffFormatter => Unit
@@ -181,7 +189,7 @@ class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
         outStream.toString
       }
     } catch {
-      case ex: java.lang.Exception => throw new VaultException("Failed to get changes: " + ex.getMessage)
+      case ex: java.lang.Exception => throw new VaultException("Failed to get difference: " + ex.getMessage)
     } finally {
       diffFormatter.close()
       revWalk.close()
@@ -189,51 +197,78 @@ class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
     }
   }
 
-//  def getInsertionLines(commitId: String): Unit = {
-//    requireValidCommitHex(commitId)
-//
-//    mRepo.incrementOpen()
-//    val revWalk = new RevWalk(mRepo)
-//    try {
-//      val newCommitId = revWalk.parseCommit(mRepo.resolve(commitId))
-//
-//      val outStream = new ByteArrayOutputStream
-//      val diffFormatter = new DiffFormatter(outStream)
-//      diffFormatter.setRepository(mRepo)
-//      diffFormatter.setDetectRenames(false)
-//      diffFormatter.setContext(0)
-//      val diffEntries = diffFormatter.scan(
-//        getParentTreeInterator(newCommitId, revWalk),
-//        getTreeIterator(newCommitId, revWalk))
-//
-//      for (entry <- diffEntries) {
-//        outStream.reset()
-//        diffFormatter.format(entry)
-//        println(outStream.toString)
-//      }
-//
-//      diffFormatter.close()
-//    } catch {
-//      case ex: java.lang.Exception => throw new GitVaultException("Failed to get changes: " + ex.getMessage)
-//    } finally {
-//      mRepo.close()
-//      revWalk.close()
-//    }
-//  }
+  def getAddedCount(commitId: String): Int =
+    countDiffLines(commitId, addedFilter)
 
-  private def getTreeIterator(commitId: String, treeIter: (RevCommit, ObjectReader) => AbstractTreeIterator)
+  def getAddedCount(oldCommitId: String, newCommitId: String): Int =
+    countDiffLinesBetween(oldCommitId, newCommitId, addedFilter)
+
+  def getRemovedCount(commitId: String): Int =
+    countDiffLines(commitId, removedFilter)
+
+  def getRemovedCount(oldCommitId: String, newCommitId: String): Int =
+    countDiffLinesBetween(oldCommitId, newCommitId, removedFilter)
+
+  def getChangedCount(commitId: String): Int =
+    countDiffLines(commitId, changedFilter)
+
+  def getChangedCount(oldCommitId: String, newCommitId: String): Int =
+    countDiffLinesBetween(oldCommitId, newCommitId, changedFilter)
+
+  private def addedFilter(line: LineChange): Boolean = line match {
+    case AddedLine(_) => true
+    case _ => false
+  }
+
+  private def removedFilter(line: LineChange): Boolean = line match {
+    case DeletedLine(_) => true
+    case _ => false
+  }
+
+  private def changedFilter(line: LineChange): Boolean = {
+    addedFilter(line) || removedFilter(line)
+  }
+
+  private def countDiffLines(commitId: String, countFilter: LineChange => Boolean): Int = {
+    val gitDiff = getDiffFormatted(
+      commitId,
+      df => { df.setContext(0); df.setDetectRenames(false) }
+    )
+    countDiffLinesImpl(GitDiffParser(gitDiff.mkString), countFilter)
+  }
+
+  private def countDiffLinesBetween(oldCommitId: String, newCommitId: String, countFilter: LineChange => Boolean) = {
+    val gitDiff = getDiffFormatted(
+      oldCommitId,
+      newCommitId,
+      df => { df.setContext(0); df.setDetectRenames(false) }
+    )
+    countDiffLinesImpl(GitDiffParser(gitDiff.mkString), countFilter)
+  }
+
+  private def countDiffLinesImpl(filesDiff: List[FileDiff], countFilter: LineChange => Boolean): Int = {
+    var count = 0
+    for (
+      fileDiff <- filesDiff;
+      GitDiffParser.TextChunk(_, _, lines) <- fileDiff.chunks
+    ) count += lines.count(countFilter)
+    count
+  }
+
+  private def getTreeIterator(commitId: String, treeIter: (AnyObjectId, RevWalk) => AbstractTreeIterator)
       (revWalk: RevWalk): AbstractTreeIterator =
-    treeIter(revWalk.parseCommit(mRepo.resolve(commitId)), revWalk.getObjectReader)
+    treeIter(mRepo.resolve(commitId), revWalk)
 
-  private def getParentTreeInterator(commit: RevCommit, objReader: ObjectReader): AbstractTreeIterator = {
+  private def getParentTreeIterator(commitObjId: AnyObjectId, revWalk: RevWalk): AbstractTreeIterator = {
+    val commit = revWalk.parseCommit(commitObjId)
     if (commit.getParentCount > 0)
-      getCanonicalTreeIterator(commit.getParent(0), objReader)
+      getCanonicalTreeIterator(commit.getParent(0).getId, revWalk)
     else
       new EmptyTreeIterator
   }
 
-  private def getCanonicalTreeIterator(commit: RevCommit, objReader: ObjectReader): AbstractTreeIterator =
-    new CanonicalTreeParser(null, objReader, commit.getTree)
+  private def getCanonicalTreeIterator(commitObjId: AnyObjectId, revWalk: RevWalk): AbstractTreeIterator =
+    new CanonicalTreeParser(null, revWalk.getObjectReader, revWalk.parseTree(commitObjId))
 
   private def requireValidCommitHexes(hexes: String*): Unit = {
     for (hex <- hexes)
