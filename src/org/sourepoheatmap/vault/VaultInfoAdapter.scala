@@ -49,12 +49,12 @@ trait VaultInfoAdapter {
   def getDiff(commitId: String): List[String]
   def getDiff(oldCommitId: String, newCommitId: String): List[String]
 
-  def getAddedCount(commitId: String): Int
-  def getAddedCount(oldCommitId: String, newCommitId: String): Int
-  def getRemovedCount(commitId: String): Int
-  def getRemovedCount(oldCommitId: String, newCommitId: String): Int
-  def getChangedCount(commitId: String): Int
-  def getChangedCount(oldCommitId: String, newCommitId: String): Int
+  def getAddedCount(commitId: String): Map[String, Int]
+  def getAddedCount(oldCommitId: String, newCommitId: String): Map[String, Int]
+  def getRemovedCount(commitId: String): Map[String, Int]
+  def getRemovedCount(oldCommitId: String, newCommitId: String): Map[String, Int]
+  def getChangedCount(commitId: String): Map[String, Int]
+  def getChangedCount(oldCommitId: String, newCommitId: String): Map[String, Int]
 }
 
 object VaultInfoAdapter {

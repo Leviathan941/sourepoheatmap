@@ -44,6 +44,7 @@ import org.sourepoheatmap.vault.{VcsMatch, VaultInfoAdapter}
 import org.sourepoheatmap.vault.VaultInfoAdapter.VaultException
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 /** Class for providing ability to get information from a Git repository.
   *
@@ -197,22 +198,22 @@ class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
     }
   }
 
-  def getAddedCount(commitId: String): Int =
+  def getAddedCount(commitId: String): Map[String, Int] =
     countDiffLines(commitId, addedFilter)
 
-  def getAddedCount(oldCommitId: String, newCommitId: String): Int =
+  def getAddedCount(oldCommitId: String, newCommitId: String): Map[String, Int] =
     countDiffLinesBetween(oldCommitId, newCommitId, addedFilter)
 
-  def getRemovedCount(commitId: String): Int =
+  def getRemovedCount(commitId: String): Map[String, Int] =
     countDiffLines(commitId, removedFilter)
 
-  def getRemovedCount(oldCommitId: String, newCommitId: String): Int =
+  def getRemovedCount(oldCommitId: String, newCommitId: String): Map[String, Int] =
     countDiffLinesBetween(oldCommitId, newCommitId, removedFilter)
 
-  def getChangedCount(commitId: String): Int =
+  def getChangedCount(commitId: String): Map[String, Int] =
     countDiffLines(commitId, changedFilter)
 
-  def getChangedCount(oldCommitId: String, newCommitId: String): Int =
+  def getChangedCount(oldCommitId: String, newCommitId: String): Map[String, Int] =
     countDiffLinesBetween(oldCommitId, newCommitId, changedFilter)
 
   private def addedFilter(line: LineChange): Boolean = line match {
@@ -229,7 +230,7 @@ class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
     addedFilter(line) || removedFilter(line)
   }
 
-  private def countDiffLines(commitId: String, countFilter: LineChange => Boolean): Int = {
+  private def countDiffLines(commitId: String, countFilter: LineChange => Boolean): Map[String, Int] = {
     val gitDiff = getDiffFormatted(
       commitId,
       df => { df.setContext(0); df.setDetectRenames(false) }
@@ -246,13 +247,14 @@ class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
     countDiffLinesImpl(GitDiffParser(gitDiff.mkString), countFilter)
   }
 
-  private def countDiffLinesImpl(filesDiff: List[FileDiff], countFilter: LineChange => Boolean): Int = {
-    var count = 0
-    for (
-      fileDiff <- filesDiff;
+  private def countDiffLinesImpl(filesDiff: List[FileDiff], countFilter: LineChange => Boolean): Map[String, Int] = {
+    val fileChanges = mutable.Map[String, Int]()
+    for {
+      fileDiff <- filesDiff
+      _ = fileChanges += (fileDiff.newFile -> 0)
       GitDiffParser.TextChunk(_, _, lines) <- fileDiff.chunks
-    ) count += lines.count(countFilter)
-    count
+    } fileChanges(fileDiff.newFile) += lines.count(countFilter)
+    fileChanges.toMap
   }
 
   private def getTreeIterator(commitId: String, treeIter: (AnyObjectId, RevWalk) => AbstractTreeIterator)

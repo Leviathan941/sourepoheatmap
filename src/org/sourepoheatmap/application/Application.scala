@@ -68,14 +68,17 @@ object Application {
     diff2.foreach(println)
 
     println("\n")
-    println("Added lines: " + vaultAdapter.getAddedCount("0ba64d027223"))
-    println("Removed lines: " + vaultAdapter.getRemovedCount("0ba64d027223"))
-    println("Changed lines: " + vaultAdapter.getChangedCount("0ba64d027223"))
-    println("Changed lines between %s and %s: %d".format(
-      "6cc0951f3bcd9aae",
-      "8b418af7fb7d8b1",
-      vaultAdapter.getChangedCount("6cc0951f3bcd9aae", "8b418af7fb7d8b1"))
-    )
+    println("Added lines in %s:".format("0ba64d027223"))
+    vaultAdapter.getAddedCount("0ba64d027223").foreach(println)
+
+    println("Removed lines in %s:".format("0ba64d027223"))
+    vaultAdapter.getRemovedCount("0ba64d027223").foreach(println)
+
+    println("Changed lines:")
+    vaultAdapter.getChangedCount("0ba64d027223").foreach(println)
+
+    println("Changed lines between %s and %s:".format("6cc0951f3bcd9aae", "8b418af7fb7d8b1"))
+    vaultAdapter.getChangedCount("6cc0951f3bcd9aae", "8b418af7fb7d8b1").foreach(println)
   }
 
 //  private def printGitDiff(gitDiff: GitDiffParser.FileDiff): Unit = {
