@@ -28,16 +28,15 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.sourepoheatmap.application
+package org.sourepoheatmap.application.cli
 
 import org.sourepoheatmap.vault.VaultInfoAdapter
-import org.sourepoheatmap.vault.git.GitDiffParser
 
-/** Placeholder to test other parts.
+/** Placeholder for future command line frontend.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-object Application {
+object CliApplication {
   def main(args: Array[String]) {
     val Some(vaultAdapter) = VaultInfoAdapter("/home/leviathan/projects/melange")
 
