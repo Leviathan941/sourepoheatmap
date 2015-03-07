@@ -32,12 +32,9 @@ package org.sourepoheatmap.application.gui
 
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
-import scalafx.geometry.{Pos, Insets}
 import scalafx.scene.Scene
-import scalafx.scene.control.Button
-import scalafx.scene.layout.HBox
+import scalafx.scene.layout.BorderPane
 import scalafx.scene.paint.{ Color}
-import scalafx.scene.text.{TextAlignment, Text}
 
 /** Placeholder for the future GUI frontend of SouRepoHeatmap application.
   *
@@ -47,27 +44,14 @@ object GuiApplication extends JFXApp {
   stage = new PrimaryStage {
     title = "Sourepo Heatmap"
     minWidth = 640
-    minHeight = 470
+    minHeight = 480
     width = 640
     height = 480
     scene = new Scene {
-      fill = Color.Black
-      content = new HBox {
-        padding = Insets(20)
-        alignmentInParent = Pos.TopRight
-        content = Seq(
-          new Text {
-            text = "Hello"
-            style = "-fx-font-size: 48pt"
-            fill = Color.White
-            alignmentInParent = Pos.TopCenter
-          },
-          new Button {
-            text = "Click me"
-            textAlignment = TextAlignment.Center
-          }
-        )
-      }
+      fill = Color.LightGray
+        content = new BorderPane {
+          top = AppMenuBar
+        }
     }
   }
 }
