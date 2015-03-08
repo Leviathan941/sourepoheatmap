@@ -31,23 +31,37 @@
 package org.sourepoheatmap.application.gui
 
 import scalafx.Includes.handle
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.{Menu, MenuBar, MenuItem}
 
 /** Application's menu bar.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-object AppMenuBar extends MenuBar {
-  lazy val mFileMenu = new Menu("File") {
-    items.add(new MenuItem("Open repository"))
-  }
-  lazy val mHelpMenu = new Menu("Help") {
-    lazy val mAboutItem = new MenuItem("About") {
-      onAction = handle { (new AboutStage).show() }
+class AppMenuBar extends MenuBar {
+  private val mFileMenu = new Menu("File") {
+    lazy val mOpenRepoItem = new MenuItem("Open repository") {
+      onAction = handle { openRepoHandler() }
     }
-    items.add(mAboutItem)
+
+    items = List(mOpenRepoItem)
   }
 
+  private val mHelpMenu = new Menu("Help") {
+    lazy val mAboutItem = new MenuItem("About") {
+      onAction = handle { mAboutStage.show() }
+    }
+    lazy val mAboutStage = new AboutStage(GuiApplication.stage)
+
+    items = List(mAboutItem)
+  }
+
+  var openRepoHandler: () => Unit = () =>
+
   useSystemMenuBar = true
+  padding = Insets(0)
+  alignmentInParent = Pos.TopLeft
+  style = "-fx-border-color: grey;" +
+    "-fx-border-width: 0 1px 1px 0;"
   menus = List(mFileMenu, mHelpMenu)
 }

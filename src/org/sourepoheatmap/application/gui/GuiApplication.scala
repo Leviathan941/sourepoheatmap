@@ -30,28 +30,45 @@
 
 package org.sourepoheatmap.application.gui
 
+import java.io.File
+
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.Scene
 import scalafx.scene.layout.BorderPane
-import scalafx.scene.paint.{ Color}
+import scalafx.scene.paint.Color
+import scalafx.stage.DirectoryChooser
 
 /** Placeholder for the future GUI frontend of SouRepoHeatmap application.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
 object GuiApplication extends JFXApp {
+  private var mRepoPath: String = ""
+  private val mAppMenuBar = new AppMenuBar
+
   stage = new PrimaryStage {
     title = "Sourepo Heatmap"
-    minWidth = 640
-    minHeight = 480
+    minWidth = 420
+    minHeight = 340
     width = 640
     height = 480
     scene = new Scene {
-      fill = Color.LightGray
+      fill = Color.DarkGrey
         content = new BorderPane {
-          top = AppMenuBar
+          top = mAppMenuBar
         }
+    }
+
+    mAppMenuBar.openRepoHandler = () => {
+      new DirectoryChooser {
+        title = "Select path to repository"
+        initialDirectory = new File(System.getProperty("user.home"))
+      }.showDialog(GuiApplication.stage) match {
+        case dir: File => mRepoPath = dir.getPath
+        case null => println("Repository has not been chosen.")
+      }
+      println(mRepoPath)
     }
   }
 }

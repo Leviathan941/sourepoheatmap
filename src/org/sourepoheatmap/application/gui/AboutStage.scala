@@ -33,39 +33,45 @@ package org.sourepoheatmap.application.gui
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
 import scalafx.scene.control.{TextArea, Label}
-import scalafx.scene.layout.BorderPane
+import scalafx.scene.layout.{VBox, BorderPane}
 import scalafx.scene.paint.Color
-import scalafx.stage.Stage
+import scalafx.stage.{StageStyle, Window, Stage}
 
 /** About stage contains information about creators.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-class AboutStage extends Stage { about =>
-  val mAppNameLabel = new Label("Sourepo Heatmap") {
+class AboutStage(owner: Window) extends Stage { about =>
+  private val mAppNameLabel = new Label("Sourepo Heatmap") {
     alignment = Pos.BaselineLeft
     padding = Insets(10)
-    style = "-fx-font-size: 24pt"
+    style = "-fx-font-family: 'sans-serif';" +
+      "-fx-font-size: 24px"
   }
 
-  val mCreatorsTextArea = new TextArea {
+  private val mCreatorsTextArea = new TextArea {
     editable = false
+    maxWidth = 340
+    maxHeight = 165
     text = "Copyright (C) 2015\n" +
       "Licensed under 3-clause BSD License.\n\n" +
-      "Alexey Kuzin (amkuzink@gmail.com)\n" +
-      "Author"
+      "Creator: Alexey Kuzin (amkuzink@gmail.com)"
   }
 
+  initOwner(owner)
+  initStyle(StageStyle.UNDECORATED)
   title = "About Sourepo Heatmap"
   resizable = false
-  width = 340
-  height = 220
+  minWidth = 340
+  minHeight = 220
   scene = new Scene {
-    fill = Color.LightGrey
-    content = new BorderPane {
-      top = mAppNameLabel
-      bottom = mCreatorsTextArea
-    }
+    fill = Color.Azure
+      content = new VBox {
+        alignmentInParent = Pos.TopLeft
+        style = "-fx-border-color: black;" +
+              "-fx-border-width: 2px;"
+        children = List(mAppNameLabel, mCreatorsTextArea)
+      }
   }
   focused.onChange((_, _, newValue) => {
     if (newValue == false) about.close()

@@ -50,7 +50,7 @@ import scala.collection.mutable
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
+private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter {
   require(!path.isEmpty)
 
   private val mRepo: Repository =
