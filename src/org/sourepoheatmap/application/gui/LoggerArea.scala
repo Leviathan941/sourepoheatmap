@@ -30,48 +30,31 @@
 
 package org.sourepoheatmap.application.gui
 
-import scalafx.application.JFXApp
-import scalafx.application.JFXApp.PrimaryStage
-import scalafx.geometry.Insets
-import scalafx.scene.Scene
-import scalafx.scene.control.TabPane
-import scalafx.scene.layout.{Priority, VBox}
-import scalafx.scene.paint.Color
+import scalafx.scene.control.TextArea
 
-/** GUI frontend of the SouRepoHeatmap application.
+/** Logger text area to show notification messages to user.
   *
-  * @author Alexey Kuzin <amkuzink@gmail.com>
+  * Alexey Kuzin <amkuzink@gmail.com>
   */
-object GuiApplication extends JFXApp {
-  private var mRepoPath: String = ""
-
-  private val mAppMenuBar = new AppMenuBar {
-    addHeatmapHandler = () => {
-      mRepoTabPane += new VaultTab("heatmap" + mRepoTabPane.tabs.size)
-    }
+object LoggerArea extends TextArea {
+  def logError(temp: String, values: String*): Unit = {
+    style = "-fx-text-fill: #8b0000"
+    log(temp, values)
   }
 
-  private val mRepoTabPane = new TabPane {
-    hgrow = Priority.Always
-    maxWidth = Double.MaxValue
-    prefWidth = 1024
+  def logWarning(temp: String, values: String*): Unit = {
+    style = "-fx-text-fill: #cd853f"
+    log(temp, values)
   }
 
-  stage = new PrimaryStage {
-    title = "Sourepo Heatmap"
-    resizable = false // TODO: Make menu bar and all other controls auto-resizable
-    width = 1024
-    height = 768
-    minWidth = 640
-    minHeight = 480
-    scene = new Scene {
-      fill = Color.LightGrey
-      content = new VBox(mAppMenuBar, mRepoTabPane, LoggerArea) {
-        fillWidth = true
-        maxWidth = Double.MaxValue
-        hgrow = Priority.Always
-        margin = Insets(0)
-      }
-    }
+  def logInfo(temp: String, values: String*): Unit = {
+    style = "-fx-text-fill: #000000"
+    log(temp, values)
   }
+
+  private def log(temp: String, values: Seq[String]) =
+    text = temp.format(values)
+
+  editable = false
+  prefHeight = 70
 }

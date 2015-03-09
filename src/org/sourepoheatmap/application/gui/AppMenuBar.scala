@@ -31,8 +31,9 @@
 package org.sourepoheatmap.application.gui
 
 import scalafx.Includes.handle
-import scalafx.geometry.{Insets, Pos}
+import scalafx.geometry.Insets
 import scalafx.scene.control.{Menu, MenuBar, MenuItem}
+import scalafx.scene.layout.Priority
 
 /** Application's menu bar.
   *
@@ -40,8 +41,8 @@ import scalafx.scene.control.{Menu, MenuBar, MenuItem}
   */
 class AppMenuBar extends MenuBar {
   private val mFileMenu = new Menu("File") {
-    lazy val mOpenRepoItem = new MenuItem("Open repository") {
-      onAction = handle { openRepoHandler() }
+    lazy val mOpenRepoItem = new MenuItem("Add heatmap") {
+      onAction = handle { addHeatmapHandler() }
     }
 
     items = List(mOpenRepoItem)
@@ -56,12 +57,14 @@ class AppMenuBar extends MenuBar {
     items = List(mAboutItem)
   }
 
-  var openRepoHandler: () => Unit = () =>
+  var addHeatmapHandler: () => Unit = () =>
 
   useSystemMenuBar = true
   padding = Insets(0)
-  alignmentInParent = Pos.TopLeft
-  style = "-fx-border-color: grey;" +
+  style = "-fx-border-style: solid;" +
+    "-fx-border-color: grey;" +
     "-fx-border-width: 0 1px 1px 0;"
+  maxWidth = Double.MaxValue
+  hgrow = Priority.Always
   menus = List(mFileMenu, mHelpMenu)
 }

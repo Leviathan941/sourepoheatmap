@@ -33,7 +33,7 @@ package org.sourepoheatmap.application.gui
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
 import scalafx.scene.control.{TextArea, Label}
-import scalafx.scene.layout.{VBox, BorderPane}
+import scalafx.scene.layout.VBox
 import scalafx.scene.paint.Color
 import scalafx.stage.{StageStyle, Window, Stage}
 
@@ -63,7 +63,7 @@ class AboutStage(owner: Window) extends Stage { about =>
   title = "About Sourepo Heatmap"
   resizable = false
   minWidth = 340
-  minHeight = 220
+  minHeight = 215
   scene = new Scene {
     fill = Color.Azure
       content = new VBox {
