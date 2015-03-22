@@ -32,13 +32,16 @@ package org.sourepoheatmap.application.gui
 
 import java.io.File
 import java.time.format.DateTimeFormatter
-import java.time.LocalDate
+import java.time.{ZoneId, LocalDate}
+
+import org.sourepoheatmap.vault.VaultInfoAdapter
+import org.sourepoheatmap.vault.VaultInfoAdapter.VaultException
 
 import scalafx.Includes._
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.{DatePicker, Button, TextField, Tab, Label}
 import scalafx.scene.input.MouseEvent
-import scalafx.scene.layout.{VBox, HBox, Priority, BorderPane}
+import scalafx.scene.layout._
 import scalafx.scene.text.Text
 import scalafx.stage.DirectoryChooser
 import scalafx.util.StringConverter
@@ -48,12 +51,12 @@ import scalafx.util.StringConverter
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-class VaultTab(title: String) extends Tab { tab =>
+class VaultTab(title: String) extends Tab { thisTab =>
   private val mTitle: Text = new Text(title) {
     onMouseClicked = (event: MouseEvent) => {
       if (event.clickCount == 2) {
         mEditTitle.text = text.value
-        tab.graphic = mEditTitle
+        thisTab.graphic = mEditTitle
         mEditTitle.requestFocus()
       }
     }
@@ -64,7 +67,7 @@ class VaultTab(title: String) extends Tab { tab =>
     focused.onChange((_, _, newValue) => {
       if (newValue == false) {
         mTitle.text = text.value
-        tab.graphic = mTitle
+        thisTab.graphic = mTitle
       }
     })
   }
@@ -91,6 +94,12 @@ class VaultTab(title: String) extends Tab { tab =>
         case null => LoggerArea.logWarning("Repository has not been chosen.")
       }
     }
+  }
+
+  private val mTreemapPane = new StackPane {
+    alignment = Pos.Center
+
+    children = Label("Place for heatmap")
   }
 
   private class DateStringConverter extends StringConverter[LocalDate] {
@@ -125,9 +134,36 @@ class VaultTab(title: String) extends Tab { tab =>
     onAction = handle { refreshHeatmap() }
 
     private def refreshHeatmap = () => {
-      println("REFRESH")
-      // TODO Implement creating heatmap here
+      LoggerArea.clear()
+      var vaultAdaptorOption: Option[VaultInfoAdapter] = None
+      try {
+        vaultAdaptorOption = VaultInfoAdapter(mPathTextField.text.value)
+        val Some(vaultAdaptor) = vaultAdaptorOption
+
+        val fromTime = convertDateToEpochTime(mFromDatePicker.value.value)
+        val toTime = convertDateToEpochTime(mToDatePicker.value.value)
+
+        // Get commits between specified dates
+        val commits = vaultAdaptor.getCommitIdsBetween(fromTime, toTime)
+        // Get Map of Tuple2(<file>, <changed lines>) and filter it to remove binary changes.
+        val commitsDiff = vaultAdaptor.getChangedCount(commits.head, commits.last).filterNot(_._2 == 0)
+
+        thisTab.mTreemapPane.children = new TreemapPane(800, 595, commitsDiff) // TODO get width and height from the window
+      } catch {
+        case ex: MatchError => LoggerArea.logInfo("Please specify path to a repository.")
+        case ex: IllegalArgumentException => LoggerArea.logInfo("'To date' must be greater than 'From date'.")
+        case ex: VaultException => LoggerArea.logError(ex.getMessage)
+      } finally {
+        vaultAdaptorOption match {
+          case Some(adaptor) => adaptor.terminate()
+          case _ =>
+        }
+      }
     }
+  }
+
+  private def convertDateToEpochTime(date: LocalDate): Int = {
+    date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond.toInt
   }
 
   graphic = mTitle
@@ -146,24 +182,40 @@ class VaultTab(title: String) extends Tab { tab =>
       HBox.setHgrow(mPathTextField, Priority.Always)
     }
 
-    left = new VBox(30) {
+    left = new AnchorPane {
       prefHeight = 600
-      fillWidth = true
-      padding = Insets(10, 5, 10, 5)
+      padding = Insets(5)
       vgrow = Priority.Always
       maxHeight = Double.MaxValue
       style = "-fx-border-style: solid;" +
         "-fx-border-color: grey;" +
         "-fx-border-width: 0 1px 0 0;"
+
+      val fromDateLayout = new VBox(5, Label("From date:"), mFromDatePicker) {
+        alignment = Pos.TopLeft
+        padding = Insets(0, 0, 0, 10)
+      }
+      val toDateLayout = new VBox(5, Label("To date:"), mToDatePicker) {
+        alignment = Pos.TopLeft
+        padding = Insets(0, 0, 0, 10)
+      }
+      val refreshLayout = new HBox(mRefreshButton) {
+        alignment = Pos.BottomRight
+        alignmentInParent = Pos.BottomRight
+        hgrow = Priority.Always
+      }
+      AnchorPane.setTopAnchor(fromDateLayout, 10)
+      AnchorPane.setTopAnchor(toDateLayout, 80)
+      AnchorPane.setBottomAnchor(refreshLayout, 5)
+      AnchorPane.setRightAnchor(refreshLayout, 5)
+
       children = List(
-        new VBox(5, new Label("From date:"), mFromDatePicker),
-        new VBox(5, new Label("To date:"), mToDatePicker),
-        new HBox(mRefreshButton) {
-          alignment = Pos.BottomRight
-          alignmentInParent = Pos.BottomRight
-          hgrow = Priority.Always
-        }
+        fromDateLayout,
+        toDateLayout,
+        refreshLayout
       )
     }
+
+    center = mTreemapPane
   }
 }

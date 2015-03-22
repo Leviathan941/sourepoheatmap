@@ -52,6 +52,10 @@ object LoggerArea extends TextArea {
     log(temp, values)
   }
 
+  def clear(): Unit = {
+    text = ""
+  }
+
   private def log(temp: String, values: Seq[String]) =
     text = temp.format(values)
 

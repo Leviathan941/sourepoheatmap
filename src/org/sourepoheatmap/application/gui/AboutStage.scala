@@ -53,7 +53,7 @@ class AboutStage(owner: Window) extends Stage { about =>
     editable = false
     maxWidth = 340
     maxHeight = 165
-    text = "Copyright (C) 2015\n" +
+    text = "Copyright (C) 2015. All rights reserved.\n" +
       "Licensed under 3-clause BSD License.\n\n" +
       "Creator: Alexey Kuzin (amkuzink@gmail.com)"
   }
