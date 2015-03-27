@@ -141,7 +141,7 @@ class TreemapPane(
   }
 
   private def addRectangle(pos: (Double, Double), dimen: (Double, Double), diffInfo: (String, Int)): Unit = {
-    // TODO Apply color according to the weight. Also, configure margin between rectangles
-    this.children.add(TreemapRectangle((pos._1 + 2, pos._2 + 2), dimen, diffInfo, Color.DarkGreen))
+    // TODO Apply color according to the weight.
+    this.children.add(TreemapRectangle((pos._1, pos._2), dimen, diffInfo, Color.DarkGreen))
   }
 }

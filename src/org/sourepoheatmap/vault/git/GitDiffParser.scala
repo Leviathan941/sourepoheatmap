@@ -39,7 +39,7 @@ import scala.util.parsing.combinator.RegexParsers
   *
   * =Formal grammar=
   * allDiffs        ::= { fileDiff }
-  * fileDiff        ::= gitHeader extendedHeader [ unifiedHeader diffChunks ]
+  * fileDiff        ::= gitHeader extendedHeader [ unifiedHeader ] [ diffChunks ]
   * gitHeader       ::= "diff --git a/" filename [ " b/" filename ] newline
   * extendedHeader  ::= [ modeChanged ] [ similarity ] [ copiedFile | renamedFile
   *                     | deletedFile | newFile ] index
@@ -106,8 +106,8 @@ private[git] object GitDiffParser extends RegexParsers {
   case object BinaryChunk extends ChangeChunk
 
   def allDiffs: Parser[List[FileDiff]] = rep1(fileDiff)
-  def fileDiff: Parser[FileDiff] = gitHeader ~ extendedHeader ~ opt(unifiedHeader ~> diffChunks) ^^
-    { case files ~ change ~ chunks => FileDiff(files._1, files._2, change, chunks getOrElse Nil)}
+  def fileDiff: Parser[FileDiff] = gitHeader ~ extendedHeader ~ (opt(unifiedHeader) ~> opt(diffChunks)) ^^
+    { case files ~ change ~ chunks => FileDiff(files._1, files._2, change, chunks getOrElse Nil) }
   def diffChunks: Parser[List[ChangeChunk]] = rep1(changeChunk)
   def changeChunk: Parser[ChangeChunk] = binaryChange | (chunkHeader ~ rep1(lineChange)) ^^ {
     case h ~ lines => TextChunk(h._1, h._2, lines)

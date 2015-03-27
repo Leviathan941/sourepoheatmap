@@ -30,10 +30,13 @@
 
 package org.sourepoheatmap.application.gui
 
+import scalafx.Includes.handle
+import scalafx.scene.control.Tooltip
 import scalafx.scene.paint.Color
-import scalafx.scene.shape.Rectangle
+import scalafx.scene.shape.{StrokeType, Rectangle}
+import scalafx.scene.text.TextAlignment
 
-/** Rectangle element of the treemap.
+/** Rectangular element of the treemap.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
@@ -41,13 +44,28 @@ class TreemapRectangle(
     pos: (Double, Double),
     dimen: (Double, Double),
     diffInfo: (String, Int),
-    color: Color) extends Rectangle {
+    color: Color) extends Rectangle { rect =>
+
+  private val mTooltip = new Tooltip {
+    text = "Object: %s\nChanges: %d".format(diffInfo._1, diffInfo._2)
+    autoFix = true
+    textAlignment = TextAlignment.Center
+  }
+  Tooltip.install(this, mTooltip)
+
+  onMouseEntered = handle { rect.stroke = Color.White }
+  onMouseExited = handle { rect.stroke = Color.Black }
+
   x = pos._1
   y = pos._2
   width = dimen._1
   height = dimen._2
   fill = color
-  // TODO Show diffInfo if the rectangle is big enough. Also, add tooltip.
+  stroke = Color.Black
+  strokeType = StrokeType.Inside
+  strokeWidth = 1
+
+  // TODO Show diffInfo if the rectangle is big enough.
 }
 
 object TreemapRectangle {
