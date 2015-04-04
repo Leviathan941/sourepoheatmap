@@ -64,7 +64,5 @@ class AppMenuBar extends MenuBar {
   style = "-fx-border-style: solid;" +
     "-fx-border-color: grey;" +
     "-fx-border-width: 0 1px 1px 0;"
-  maxWidth = Double.MaxValue
-  hgrow = Priority.Always
   menus = List(mFileMenu, mHelpMenu)
 }

@@ -60,5 +60,6 @@ object LoggerArea extends TextArea {
     text = temp.format(values)
 
   editable = false
-  prefHeight = 70
+  maxHeight = 70
+  wrapText = true
 }

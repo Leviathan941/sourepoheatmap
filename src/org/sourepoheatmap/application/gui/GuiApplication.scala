@@ -43,7 +43,7 @@ import scalafx.scene.paint.Color
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
 object GuiApplication extends JFXApp {
-  private var mRepoPath: String = ""
+  private val mRepoTabPane = new TabPane
 
   private val mAppMenuBar = new AppMenuBar {
     addHeatmapHandler = () => {
@@ -51,26 +51,20 @@ object GuiApplication extends JFXApp {
     }
   }
 
-  private val mRepoTabPane = new TabPane {
-    hgrow = Priority.Always
-    maxWidth = Double.MaxValue
-    prefWidth = 1024
-  }
-
   stage = new PrimaryStage {
     title = "Sourepo Heatmap"
-    resizable = false // TODO: Make menu bar and all other controls auto-resizable
-    width = 1024
-    height = 768
-    minWidth = 640
-    minHeight = 480
     scene = new Scene {
       fill = Color.LightGrey
-      content = new VBox(mAppMenuBar, mRepoTabPane, LoggerArea) {
+      minWidth = 1024
+      minHeight = 768
+      root = new VBox(mAppMenuBar, mRepoTabPane, LoggerArea) {
         fillWidth = true
+        prefWidth = 1024
+        prefHeight = 768
         maxWidth = Double.MaxValue
-        hgrow = Priority.Always
+        maxHeight = Double.MaxValue
         margin = Insets(0)
+        VBox.setVgrow(mRepoTabPane, Priority.Always)
       }
     }
   }

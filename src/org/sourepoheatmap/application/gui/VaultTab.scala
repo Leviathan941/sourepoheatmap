@@ -52,7 +52,7 @@ import scalafx.util.StringConverter
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
 class VaultTab(title: String) extends Tab { thisTab =>
-  private val mTitle: Text = new Text(title) {
+  private lazy val mTitle: Text = new Text(title) {
     onMouseClicked = (event: MouseEvent) => {
       if (event.clickCount == 2) {
         mEditTitle.text = text.value
@@ -61,7 +61,7 @@ class VaultTab(title: String) extends Tab { thisTab =>
       }
     }
   }
-  private val mEditTitle: TextField = new TextField {
+  private lazy val mEditTitle: TextField = new TextField {
     prefColumnCount = 6
 
     focused.onChange((_, _, newValue) => {
@@ -97,17 +97,22 @@ class VaultTab(title: String) extends Tab { thisTab =>
   }
 
   private val mTreemapPane = new StackPane {
-    alignment = Pos.Center
+    val mPlaceholderLabel = Label("Place for heatmap")
 
-    children = Label("Place for heatmap")
+    alignment = Pos.Center
+    children = mPlaceholderLabel
+
+    def clear(): Unit = {
+      children = mPlaceholderLabel
+    }
   }
 
   private class DateStringConverter extends StringConverter[LocalDate] {
-    private val mDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private val mDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
     override def fromString(dateString: String): LocalDate = {
       Option(dateString) match {
-        case Some(s) if (!s.isEmpty) => LocalDate.parse(dateString, mDateFormatter)
+        case Some(s) if !s.isEmpty => LocalDate.parse(dateString, mDateFormatter)
         case _ => null
       }
     }
@@ -127,38 +132,24 @@ class VaultTab(title: String) extends Tab { thisTab =>
     converter = new DateStringConverter
   }
 
-  private val mRefreshButton = new Button("Refresh") {
-    alignmentInParent = Pos.BottomRight
-    hgrow = Priority.Never
+  private lazy val mRefreshButton: Button = new Button("Refresh") {
     padding = Insets(5)
-    onAction = handle { refreshHeatmap() }
-
-    private def refreshHeatmap = () => {
+    onAction = handle {
       LoggerArea.clear()
-      var vaultAdaptorOption: Option[VaultInfoAdapter] = None
-      try {
-        vaultAdaptorOption = VaultInfoAdapter(mPathTextField.text.value)
-        val Some(vaultAdaptor) = vaultAdaptorOption
+      refreshTreemap()
+      visible = false
+      mClearButton.visible = true
+    }
+  }
 
-        val fromTime = convertDateToEpochTime(mFromDatePicker.value.value)
-        val toTime = convertDateToEpochTime(mToDatePicker.value.value)
-
-        // Get commits between specified dates
-        val commits = vaultAdaptor.getCommitIdsBetween(fromTime, toTime)
-        // Get Map of Tuple2(<file>, <changed lines>) and filter it to remove binary changes.
-        val commitsDiff = vaultAdaptor.getChangedCount(commits.head, commits.last).filterNot(_._2 == 0)
-
-        thisTab.mTreemapPane.children = new TreemapPane(800, 595, commitsDiff) // TODO get width and height from the window
-      } catch {
-        case ex: MatchError => LoggerArea.logInfo("Please specify path to a repository.")
-        case ex: IllegalArgumentException => LoggerArea.logInfo("'To date' must be greater than 'From date'.")
-        case ex: VaultException => LoggerArea.logError(ex.getMessage)
-      } finally {
-        vaultAdaptorOption match {
-          case Some(adaptor) => adaptor.terminate()
-          case _ =>
-        }
-      }
+  private lazy val mClearButton: Button = new Button("Clear") {
+    padding = Insets(5)
+    visible = false
+    onAction = handle {
+      LoggerArea.clear()
+      clear()
+      visible = false
+      mRefreshButton.visible = true
     }
   }
 
@@ -166,14 +157,41 @@ class VaultTab(title: String) extends Tab { thisTab =>
     date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond.toInt
   }
 
+  def clear(): Unit = mTreemapPane.clear()
+
+  def refreshTreemap(): Unit = {
+    var vaultAdaptorOption: Option[VaultInfoAdapter] = None
+    try {
+      vaultAdaptorOption = VaultInfoAdapter(mPathTextField.text.value)
+      val Some(vaultAdaptor) = vaultAdaptorOption
+
+      val fromTime = convertDateToEpochTime(mFromDatePicker.value.value)
+      val toTime = convertDateToEpochTime(mToDatePicker.value.value)
+
+      // Get commits between specified dates
+      val commits = vaultAdaptor.getCommitIdsBetween(fromTime, toTime)
+      // Get Map of Tuple2(<file>, <changed lines>) and filter it to remove binary changes.
+      val commitsDiff = vaultAdaptor.getChangedCount(commits.head, commits.last).filterNot(_._2 == 0)
+
+      thisTab.mTreemapPane.children = new TreemapPane(mTreemapPane.width.value, mTreemapPane.height.value,
+        commitsDiff)
+    } catch {
+      case ex: IllegalArgumentException => LoggerArea.logInfo("'To date' must be greater than 'From date'.")
+      case ex: VaultException => LoggerArea.logError(ex.getMessage)
+      case ex: NoSuchElementException => LoggerArea.logInfo("No commits between specified dates.")
+      case ex: MatchError => LoggerArea.logWarning("Please, specify path to a repository.")
+    } finally {
+      vaultAdaptorOption match {
+        case Some(adaptor) => adaptor.terminate()
+        case _ =>
+      }
+    }
+  }
+
   graphic = mTitle
   content = new BorderPane {
-    hgrow = Priority.Always
-    vgrow = Priority.Always
-
     top = new HBox(10) {
       alignment = Pos.BaselineLeft
-      hgrow = Priority.Always
       style = "-fx-border-style: solid;" +
         "-fx-border-color: grey;" +
         "-fx-border-width: 0 0 1px 0;"
@@ -182,11 +200,9 @@ class VaultTab(title: String) extends Tab { thisTab =>
       HBox.setHgrow(mPathTextField, Priority.Always)
     }
 
-    left = new AnchorPane {
-      prefHeight = 600
+    left = new VBox {
       padding = Insets(5)
-      vgrow = Priority.Always
-      maxHeight = Double.MaxValue
+      spacing = 30
       style = "-fx-border-style: solid;" +
         "-fx-border-color: grey;" +
         "-fx-border-width: 0 1px 0 0;"
@@ -199,15 +215,10 @@ class VaultTab(title: String) extends Tab { thisTab =>
         alignment = Pos.TopLeft
         padding = Insets(0, 0, 0, 10)
       }
-      val refreshLayout = new HBox(mRefreshButton) {
+      val refreshLayout = new StackPane {
         alignment = Pos.BottomRight
-        alignmentInParent = Pos.BottomRight
-        hgrow = Priority.Always
+        children = List(mClearButton, mRefreshButton)
       }
-      AnchorPane.setTopAnchor(fromDateLayout, 10)
-      AnchorPane.setTopAnchor(toDateLayout, 80)
-      AnchorPane.setBottomAnchor(refreshLayout, 5)
-      AnchorPane.setRightAnchor(refreshLayout, 5)
 
       children = List(
         fromDateLayout,
