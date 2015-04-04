@@ -96,8 +96,8 @@ class VaultTab(title: String) extends Tab { thisTab =>
     }
   }
 
-  private val mTreemapPane = new StackPane {
-    val mPlaceholderLabel = Label("Place for heatmap")
+  private class TreemapPaneHolder extends StackPane {
+    private val mPlaceholderLabel = Label("Place for heatmap")
 
     alignment = Pos.Center
     children = mPlaceholderLabel
@@ -106,6 +106,8 @@ class VaultTab(title: String) extends Tab { thisTab =>
       children = mPlaceholderLabel
     }
   }
+
+  private val mTreemapPane = new TreemapPaneHolder
 
   private class DateStringConverter extends StringConverter[LocalDate] {
     private val mDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
