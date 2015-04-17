@@ -43,6 +43,7 @@ class TreemapPane(
     diffInfo: Map[String, Int]) extends AnchorPane {
 
   val mDiffInfo = sortByWeight(diffInfo.toList)
+  val mColormap = HeatmapColor.weightsToRgb(diffInfo)
   val mScale: Double = getScale(treemapWidth, treemapHeight, mDiffInfo)
 
   squarify(mDiffInfo, Nil, (0, 0), (treemapWidth, treemapHeight))
@@ -141,7 +142,6 @@ class TreemapPane(
   }
 
   private def addRectangle(pos: (Double, Double), dimen: (Double, Double), diffInfo: (String, Int)): Unit = {
-    // TODO Apply color according to the weight.
-    this.children.add(TreemapRectangle((pos._1, pos._2), dimen, diffInfo, Color.DarkGreen))
+    this.children.add(TreemapRectangle(pos, dimen, diffInfo, mColormap(diffInfo._1)))
   }
 }
