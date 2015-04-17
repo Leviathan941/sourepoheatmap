@@ -40,13 +40,15 @@ import scala.util.parsing.combinator.RegexParsers
   * =Formal grammar=
   * allDiffs        ::= { fileDiff }
   * fileDiff        ::= gitHeader extendedHeader [ unifiedHeader ] [ diffChunks ]
-  * gitHeader       ::= "diff --git a/" filename [ " b/" filename ] newline
+  * gitHeader       ::= "diff --git " fromGitFilename toGitFilename newline
   * extendedHeader  ::= [ modeChanged ] [ similarity ] [ copiedFile | renamedFile
   *                     | deletedFile | newFile ] index
   * unifiedHeader   ::= "--- " [ "a/" ] filename newline
   *                     "+++ " [ "b/" ] filename newline
   * diffChunks      ::= { changeChunk }
-  * filename        ::= """[&#94;*&%\s]+"""
+  * fromGitFilename ::= """"?a/[&#94;*&%\t\n\r\f]+"? "?b/"""
+  * toGitFilename   ::= filename
+  * filename        ::= """"?[&#94;*&%\t\n\r\f]+"?"""
   * newline         ::= """\r?\n"""
   * modeChanged     ::= "old mode " mode newline
   *                     "new mode " mode newline
@@ -115,8 +117,7 @@ private[git] object GitDiffParser extends RegexParsers {
   }
 
   def gitHeader: Parser[(String, String)] =
-    "diff --git" ~ " " ~ oldFilePrefix ~> filename ~ (" " ~ newFilePrefix ~> filename) <~ newline ^^
-      { case f1 ~ f2 => (f1, f2) }
+    "diff --git " ~> fromGitFilename ~ toGitFilename <~ newline ^^ { case f1 ~ f2 => (f1, f2) }
   def extendedHeader: Parser[FileChange] =
     opt(modeChanged) ~ opt(similarity) ~> opt(copiedFile | renamedFile | deletedFile | newFile) <~ index ^^
       { _.getOrElse(ModifiedFile) }
@@ -143,7 +144,9 @@ private[git] object GitDiffParser extends RegexParsers {
   def binaryChange: Parser[ChangeChunk] = "Binary files " ~ opt(opt(oldFilePrefix) ~ filename ~
     " " ~ opt(newFilePrefix) ~ filename ~ " ") ~ "differ" ~ newline ^^ { case _ => BinaryChunk }
 
-  def filename: Parser[String] = """[^*&%\s]+""".r
+  def fromGitFilename: Parser[String] = """"?a/[^*&%\t\n\r\f]+"? "?b/""".r
+  def toGitFilename: Parser[String] = filename
+  def filename: Parser[String] = """"?[^*&%\t\n\r\f]+"?""".r
   def newline: Parser[String] = """\r?\n""".r
   def mode: Parser[Int] = """\d{6}""".r ^^ { _.toInt }
   def number: Parser[Int] = """\d+""".r ^^ { _.toInt }

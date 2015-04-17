@@ -37,6 +37,7 @@ import java.time.{ZoneId, LocalDate}
 import org.sourepoheatmap.vault.VaultInfoAdapter
 import org.sourepoheatmap.vault.VaultInfoAdapter.VaultException
 
+import scala.util.control
 import scalafx.Includes._
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.{DatePicker, Button, TextField, Tab, Label}
@@ -138,9 +139,10 @@ class VaultTab(title: String) extends Tab { thisTab =>
     padding = Insets(5)
     onAction = handle {
       LoggerArea.clear()
-      refreshTreemap()
-      visible = false
-      mClearButton.visible = true
+      if (refreshTreemap()) {
+        visible = false
+        mClearButton.visible = true
+      }
     }
   }
 
@@ -161,33 +163,44 @@ class VaultTab(title: String) extends Tab { thisTab =>
 
   def clear(): Unit = mTreemapPane.clear()
 
-  def refreshTreemap(): Unit = {
-    var vaultAdaptorOption: Option[VaultInfoAdapter] = None
-    try {
-      vaultAdaptorOption = VaultInfoAdapter(mPathTextField.text.value)
-      val Some(vaultAdaptor) = vaultAdaptorOption
-
+  def refreshTreemap(): Boolean = {
+    val impl = (adapter: VaultInfoAdapter) => {
       val fromTime = convertDateToEpochTime(mFromDatePicker.value.value)
       val toTime = convertDateToEpochTime(mToDatePicker.value.value)
 
       // Get commits between specified dates
-      val commits = vaultAdaptor.getCommitIdsBetween(fromTime, toTime)
+      val commits = adapter.getCommitIdsBetween(fromTime, toTime)
       // Get Map of Tuple2(<file>, <changed lines>) and filter it to remove binary changes.
-      val commitsDiff = vaultAdaptor.getChangedCount(commits.head, commits.last).filterNot(_._2 == 0)
+      val commitsDiff = getCommitsDiff(adapter, commits).filterNot(_._2 == 0)
 
       thisTab.mTreemapPane.children = new TreemapPane(mTreemapPane.width.value, mTreemapPane.height.value,
         commitsDiff)
-    } catch {
-      case ex: IllegalArgumentException => LoggerArea.logInfo("'To date' must be greater than 'From date'.")
-      case ex: VaultException => LoggerArea.logError(ex.getMessage)
-      case ex: NoSuchElementException => LoggerArea.logInfo("No commits between specified dates.")
-      case ex: MatchError => LoggerArea.logWarning("Please, specify path to a repository.")
-    } finally {
-      vaultAdaptorOption match {
-        case Some(adaptor) => adaptor.terminate()
-        case _ =>
-      }
     }
+
+    try {
+      val Some(vaultAdaptor) = VaultInfoAdapter(mPathTextField.text.value)
+
+      val either = control.Exception.catching(classOf[IllegalArgumentException], classOf[VaultException],
+        classOf[NoSuchElementException]).either(impl(vaultAdaptor))
+      vaultAdaptor.terminate()
+
+      either match {
+        case Left(exc) => exc match {
+          case ex: IllegalArgumentException => LoggerArea.logInfo("'To date' must be greater than 'From date'.")
+          case ex: VaultException => LoggerArea.logError(ex.getMessage)
+          case ex: NoSuchElementException => LoggerArea.logInfo("There are no commits between specified dates.")
+        }
+          false
+        case _ => true
+      }
+    } catch {
+      case ex: MatchError => LoggerArea.logWarning("Please, specify path to a repository."); false
+    }
+  }
+
+  private def getCommitsDiff(vaultAdapter: VaultInfoAdapter, commits: List[String]): Map[String, Int] = {
+    if (commits.size == 1) vaultAdapter.getChangedCount(commits.head)
+    else vaultAdapter.getChangedCount(commits.head, commits.last)
   }
 
   graphic = mTitle
