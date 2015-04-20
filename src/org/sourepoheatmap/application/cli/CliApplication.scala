@@ -31,6 +31,7 @@
 package org.sourepoheatmap.application.cli
 
 import org.sourepoheatmap.vault.VaultInfoAdapter
+//import org.sourepoheatmap.vault.git.GitDiffParser
 
 /** Placeholder for future command line frontend.
   *
@@ -65,6 +66,7 @@ object CliApplication {
 
     val diff2 = vaultAdapter.getDiff("4bd442c137fc0", "0ba64d027223")
     diff2.foreach(println)
+//    GitDiffParser(diff2.mkString).foreach(printGitDiff)
 
     println("\n")
     println("Added lines in %s:".format("0ba64d027223"))

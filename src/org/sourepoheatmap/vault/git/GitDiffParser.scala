@@ -30,6 +30,7 @@
 
 package org.sourepoheatmap.vault.git
 
+import scala.util.matching.Regex
 import scala.util.parsing.combinator.RegexParsers
 
 /** Parser for "git diff" formatted text.
@@ -46,9 +47,9 @@ import scala.util.parsing.combinator.RegexParsers
   * unifiedHeader   ::= "--- " [ "a/" ] filename newline
   *                     "+++ " [ "b/" ] filename newline
   * diffChunks      ::= { changeChunk }
-  * fromGitFilename ::= """"?a/[&#94;*&%\t\n\r\f]+"? "?b/"""
+  * fromGitFilename ::= """(?:"?a/)([&#94;*&%\t\n\r\f]+)(?:"? "?b/)"""
   * toGitFilename   ::= filename
-  * filename        ::= """"?[&#94;*&%\t\n\r\f]+"?"""
+  * filename        ::= """(?:"?)([&#94;*&%\t\n\r\f]+)(?:"?)"""
   * newline         ::= """\r?\n"""
   * modeChanged     ::= "old mode " mode newline
   *                     "new mode " mode newline
@@ -117,10 +118,11 @@ private[git] object GitDiffParser extends RegexParsers {
   }
 
   def gitHeader: Parser[(String, String)] =
-    "diff --git " ~> fromGitFilename ~ toGitFilename <~ newline ^^ { case f1 ~ f2 => (f1, f2) }
+    "diff --git " ~> fromGitFilename ~ toGitFilename <~ newline ^^ { case fromGitFilenameRegex(f1) ~
+      filenameRegex(f2) => (f1, f2) }
   def extendedHeader: Parser[FileChange] =
     opt(modeChanged) ~ opt(similarity) ~> opt(copiedFile | renamedFile | deletedFile | newFile) <~ index ^^
-      { _.getOrElse(ModifiedFile) }
+      { _ getOrElse ModifiedFile }
   def unifiedHeader: Parser[(String, String)] =
     "--- " ~ opt(oldFilePrefix) ~> filename ~ (newline ~
     "+++ " ~ opt(newFilePrefix) ~> filename) <~ newline ^^ { case f1 ~ f2 => (f1, f2) }
@@ -144,9 +146,9 @@ private[git] object GitDiffParser extends RegexParsers {
   def binaryChange: Parser[ChangeChunk] = "Binary files " ~ opt(opt(oldFilePrefix) ~ filename ~
     " " ~ opt(newFilePrefix) ~ filename ~ " ") ~ "differ" ~ newline ^^ { case _ => BinaryChunk }
 
-  def fromGitFilename: Parser[String] = """"?a/[^*&%\t\n\r\f]+"? "?b/""".r
+  def fromGitFilename: Parser[String] = fromGitFilenameRegex
   def toGitFilename: Parser[String] = filename
-  def filename: Parser[String] = """"?[^*&%\t\n\r\f]+"?""".r
+  def filename: Parser[String] = filenameRegex
   def newline: Parser[String] = """\r?\n""".r
   def mode: Parser[Int] = """\d{6}""".r ^^ { _.toInt }
   def number: Parser[Int] = """\d+""".r ^^ { _.toInt }
@@ -161,6 +163,9 @@ private[git] object GitDiffParser extends RegexParsers {
 
   def oldFilePrefix = "a/"
   def newFilePrefix = "b/"
+
+  private val fromGitFilenameRegex: Regex = """(?:"?a/)([^*&%\t\n\r\f]+)(?:"? "?b/)""".r
+  private val filenameRegex: Regex = """(?:"?)([^*&%\t\n\r\f]+)(?:"?)""".r
 
   def apply(diff: String): List[FileDiff] = parseAll(allDiffs, diff) match {
     case Success(result, _) => result
