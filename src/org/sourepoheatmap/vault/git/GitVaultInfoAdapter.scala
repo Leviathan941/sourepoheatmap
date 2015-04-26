@@ -33,15 +33,16 @@ package org.sourepoheatmap.vault.git
 import java.io.{ByteArrayOutputStream, File, IOException}
 
 import org.eclipse.jgit.api.errors.GitAPIException
-import org.eclipse.jgit.api.{Git, ListBranchCommand}
+import org.eclipse.jgit.api.{CheckoutResult, Git, ListBranchCommand}
 import org.eclipse.jgit.diff.DiffFormatter
 import org.eclipse.jgit.lib.{AnyObjectId, AbbreviatedObjectId, Repository}
 import org.eclipse.jgit.revwalk.{RevCommit, RevWalk}
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.{AbstractTreeIterator, CanonicalTreeParser, EmptyTreeIterator}
+import org.sourepoheatmap.vault.VaultInfoAdapter.VaultType.VaultType
 import org.sourepoheatmap.vault.git.GitDiffParser.{DeletedLine, AddedLine, LineChange, FileDiff}
 import org.sourepoheatmap.vault.{VcsMatch, VaultInfoAdapter}
-import org.sourepoheatmap.vault.VaultInfoAdapter.VaultException
+import org.sourepoheatmap.vault.VaultInfoAdapter.{VaultType, VaultException}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -61,13 +62,19 @@ private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter 
       case ex: java.lang.Exception => throw new VaultException("Failed to find Git repository %s.\n%s".format(
         path, ex.getMessage))
     }
-  println(mRepo.getDirectory.getPath)
 
-  def terminate(): Unit = {
+  override def terminate(): Unit = {
     mRepo.close()
   }
 
-  def getCurrentBranchName: String =
+  override def getVaultType: VaultType = VaultType.Git
+
+  override def switchVault(path: String): VaultInfoAdapter = {
+    terminate()
+    new GitVaultInfoAdapter(path)
+  }
+
+  override def getCurrentBranchName: String =
     getHeadBranch(_.getFullBranch)
 
   def getCurrentBranchShortenName: String =
@@ -88,7 +95,7 @@ private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter 
   def getRemoteBranches: List[String] =
     getBranches(_.setListMode(ListBranchCommand.ListMode.REMOTE))
 
-  def getBranches: List[String] =
+  override def getBranches: List[String] =
     getBranches(_.setListMode(ListBranchCommand.ListMode.ALL))
 
   private def getBranches(getBranchList: ListBranchCommand => ListBranchCommand = cmd => cmd): List[String] = {
@@ -102,11 +109,24 @@ private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter 
     } finally mRepo.close()
   }
 
-  def getCommitIdAfter(since: Int): Option[String] = {
+  override def switchBranch(branch: String): Unit = {
+    mRepo.incrementOpen()
+    try {
+      val git = new Git(mRepo)
+      val checkoutCmd = git.checkout().setName(branch)
+      checkoutCmd.call()
+      if (checkoutCmd.getResult.getStatus != CheckoutResult.Status.OK)
+        throw new VaultException("Failed to switch current branch to " + branch)
+    } catch {
+      case ex: GitAPIException => throw new VaultException("Failed to switch current branch: " + ex.getMessage)
+    } finally mRepo.close()
+  }
+
+  override def getCommitIdAfter(since: Int): Option[String] = {
     getCommitId(_.getCommitTime >= since, _.head)
   }
 
-  def getCommitIdUntil(until: Int): Option[String] = {
+  override def getCommitIdUntil(until: Int): Option[String] = {
     getCommitId(_.getCommitTime <= until, _.reverse.head)
   }
 
@@ -116,7 +136,7 @@ private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter 
     if (commits.isEmpty) None else Some(selectElement(commits))
   }
 
-  def getCommitIdsBetween(since: Int, until: Int): List[String] = {
+  override def getCommitIdsBetween(since: Int, until: Int): List[String] = {
     require(until >= since, "'until' time should be greater than 'since'")
     getCommitIds(commit => commit.getCommitTime >= since && commit.getCommitTime <= until)
   }
@@ -135,10 +155,10 @@ private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter 
     } finally mRepo.close()
   }
 
-  def getDiff(commitId: String): List[String] =
+  override def getDiff(commitId: String): List[String] =
     getDiffFormatted(commitId, _ => ())
 
-  def getDiff(oldCommitId: String, newCommitId: String): List[String] =
+  override def getDiff(oldCommitId: String, newCommitId: String): List[String] =
     getDiffFormatted(oldCommitId, newCommitId, _ => ())
 
   private def getDiffFormatted(commitId: String, formatConfig: DiffFormatter => Unit): List[String] = {
@@ -198,22 +218,22 @@ private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter 
     }
   }
 
-  def getAddedCount(commitId: String): Map[String, Int] =
+  override def getAddedCount(commitId: String): Map[String, Int] =
     countDiffLines(commitId, addedFilter)
 
-  def getAddedCount(oldCommitId: String, newCommitId: String): Map[String, Int] =
+  override def getAddedCount(oldCommitId: String, newCommitId: String): Map[String, Int] =
     countDiffLinesBetween(oldCommitId, newCommitId, addedFilter)
 
-  def getRemovedCount(commitId: String): Map[String, Int] =
+  override def getRemovedCount(commitId: String): Map[String, Int] =
     countDiffLines(commitId, removedFilter)
 
-  def getRemovedCount(oldCommitId: String, newCommitId: String): Map[String, Int] =
+  override def getRemovedCount(oldCommitId: String, newCommitId: String): Map[String, Int] =
     countDiffLinesBetween(oldCommitId, newCommitId, removedFilter)
 
-  def getChangedCount(commitId: String): Map[String, Int] =
+  override def getChangedCount(commitId: String): Map[String, Int] =
     countDiffLines(commitId, changedFilter)
 
-  def getChangedCount(oldCommitId: String, newCommitId: String): Map[String, Int] =
+  override def getChangedCount(oldCommitId: String, newCommitId: String): Map[String, Int] =
     countDiffLinesBetween(oldCommitId, newCommitId, changedFilter)
 
   private def addedFilter(line: LineChange): Boolean = line match {

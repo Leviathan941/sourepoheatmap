@@ -30,7 +30,9 @@
 
 package org.sourepoheatmap.vault
 
+import org.sourepoheatmap.vault.VaultInfoAdapter.VaultType.VaultType
 import org.sourepoheatmap.vault.git.GitVaultInfoAdapter
+import org.sourepoheatmap.vault.repo.RepoVaultInfoAdapter
 
 /** Trait for providing ability to get information from a repository.
   *
@@ -39,8 +41,13 @@ import org.sourepoheatmap.vault.git.GitVaultInfoAdapter
 trait VaultInfoAdapter {
   def terminate(): Unit
 
+  def getVaultType: VaultType
+
+  def switchVault(path: String): VaultInfoAdapter
+
   def getCurrentBranchName: String
   def getBranches: List[String]
+  def switchBranch(branch: String): Unit
 
   def getCommitIdAfter(since: Int): Option[String]
   def getCommitIdUntil(until: Int): Option[String]
@@ -60,8 +67,14 @@ trait VaultInfoAdapter {
 object VaultInfoAdapter {
   class VaultException(msg: String) extends Exception(msg)
 
+  object VaultType extends Enumeration {
+    type VaultType = Value
+    val Git, Repo = Value
+  }
+
   def apply(vaultPath: String): Option[VaultInfoAdapter] = vaultPath match {
     case GitVaultInfoAdapter() => Some(new GitVaultInfoAdapter(vaultPath))
+    case RepoVaultInfoAdapter() => Some(new RepoVaultInfoAdapter(vaultPath))
     case _ => None
   }
 }

@@ -40,10 +40,24 @@ import org.sourepoheatmap.vault.VaultInfoAdapter
 object CliApplication {
   def main(args: Array[String]) {
     val Some(vaultAdapter) = VaultInfoAdapter("/home/leviathan/projects/melange")
+    println("Vault type = " + vaultAdapter.getVaultType)
 
-    println(vaultAdapter.getCurrentBranchName)
-    println()
+//    testRepoVaultInfoAdapter(vaultAdapter)
+//    testGitVaultInfoAdapter(vaultAdapter)
+  }
+
+  private def testRepoVaultInfoAdapter(vaultAdapter: VaultInfoAdapter): Unit = {
+    println("Branches:")
     vaultAdapter.getBranches.foreach(println)
+  }
+
+  private def testGitVaultInfoAdapter(vaultAdapter: VaultInfoAdapter): Unit = {
+    vaultAdapter.getBranches.foreach(println)
+    println()
+    println("Current branch before = " + vaultAdapter.getCurrentBranchName)
+    vaultAdapter.switchBranch("refs/heads/master")
+    println("Current branch after = " + vaultAdapter.getCurrentBranchName)
+
     println()
     vaultAdapter.getCommitIdsBetween(1390471304, 1424523705).foreach(println)
 
@@ -66,7 +80,7 @@ object CliApplication {
 
     val diff2 = vaultAdapter.getDiff("4bd442c137fc0", "0ba64d027223")
     diff2.foreach(println)
-//    GitDiffParser(diff2.mkString).foreach(printGitDiff)
+    //    GitDiffParser(diff2.mkString).foreach(printGitDiff)
 
     println("\n")
     println("Added lines in %s:".format("0ba64d027223"))

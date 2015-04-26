@@ -21,6 +21,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   "org.scalafx" %% "scalafx" % "8.0.40-R8" withJavadoc() withSources()
+//  "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "4.0.0.201503231230-m1" withJavadoc() withSources()
 )
 
 mainClass in (Compile, run) := Some("org.sourepoheatmap.application.gui.GuiApplication")
