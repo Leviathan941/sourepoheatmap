@@ -18,10 +18,15 @@ javaHome := {
 unmanagedJars in Compile += Attributed.blank(javaHome.value.getOrElse(file(".")) / "jre/lib/ext/jfxrt.jar")
 
 libraryDependencies ++= Seq(
-  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.3",
+  "org.scala-lang.modules" %% "scala-parser-combinators" % "latest.integration",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  "org.scalafx" %% "scalafx" % "8.0.40-R8" withJavadoc() withSources()
-//  "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "4.0.0.201503231230-m1" withJavadoc() withSources()
+  "org.scalafx" %% "scalafx" % "latest.integration" withJavadoc() withSources(),
+  "org.eclipse.jgit" % "org.eclipse.jgit" % "4.0.+" withJavadoc() withSources() excludeAll(
+    ExclusionRule(organization = "com.googlecode.javaewah"),
+    ExclusionRule(organization = "com.jcraft"),
+    ExclusionRule(organization = "org.apache.httpcomponents"),
+    ExclusionRule(organization = "org.slf4j")
+  )
 )
 
 mainClass in (Compile, run) := Some("org.sourepoheatmap.application.gui.GuiApplication")
@@ -37,7 +42,6 @@ assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeSca
 assemblyExcludedJars in assembly := {
   val cp = (fullClasspath in assembly).value
   cp filter {
-    x => x.data.getName.matches(".*javadoc\\.jar$") || x.data.getName.matches(".*sources\\.jar$") ||
-      x.data.getName == "jfxrt.jar"
+    x => x.data.getName == "jfxrt.jar"
   }
 }
