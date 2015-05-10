@@ -31,8 +31,6 @@
 package org.sourepoheatmap.application.gui
 
 import java.io.File
-import java.time.format.DateTimeFormatter
-import java.time.{ZoneId, LocalDate}
 
 import org.sourepoheatmap.vault.VaultInfoAdapter
 import org.sourepoheatmap.vault.VaultInfoAdapter.VaultException
@@ -40,12 +38,12 @@ import org.sourepoheatmap.vault.VaultInfoAdapter.VaultException
 import scala.util.control
 import scalafx.Includes._
 import scalafx.geometry.{Insets, Pos}
-import scalafx.scene.control.{DatePicker, Button, TextField, Tab, Label}
+import scalafx.scene.control.ScrollPane.ScrollBarPolicy
+import scalafx.scene.control.{Tab, Button, Label, TextField, ScrollPane}
 import scalafx.scene.input.MouseEvent
 import scalafx.scene.layout._
 import scalafx.scene.text.Text
 import scalafx.stage.DirectoryChooser
-import scalafx.util.StringConverter
 
 /** Tab containing controls to select repository location,
   * commits and heat map.
@@ -110,31 +108,6 @@ class VaultTab(title: String) extends Tab { thisTab =>
 
   private val mTreemapPane = new TreemapPaneHolder
 
-  private class DateStringConverter extends StringConverter[LocalDate] {
-    private val mDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-
-    override def fromString(dateString: String): LocalDate = {
-      Option(dateString) match {
-        case Some(s) if !s.isEmpty => LocalDate.parse(dateString, mDateFormatter)
-        case _ => null
-      }
-    }
-
-    override def toString(localDate: LocalDate): String = {
-      Option(localDate) match {
-        case Some(ld) => mDateFormatter.format(ld)
-        case _ => ""
-      }
-    }
-  }
-
-  private val mFromDatePicker = new DatePicker(LocalDate.now()) {
-    converter = new DateStringConverter
-  }
-  private val mToDatePicker = new DatePicker(LocalDate.now()) {
-    converter = new DateStringConverter
-  }
-
   private lazy val mRefreshButton: Button = new Button("Refresh") {
     padding = Insets(5)
     onAction = handle {
@@ -157,19 +130,14 @@ class VaultTab(title: String) extends Tab { thisTab =>
     }
   }
 
-  private def convertDateToEpochTime(date: LocalDate): Int = {
-    date.atStartOfDay(ZoneId.systemDefault()).toEpochSecond.toInt
-  }
-
   def clear(): Unit = mTreemapPane.clear()
 
   def refreshTreemap(): Boolean = {
     val impl = (adapter: VaultInfoAdapter) => {
-      val fromTime = convertDateToEpochTime(mFromDatePicker.value.value)
-      val toTime = convertDateToEpochTime(mToDatePicker.value.value)
+      val dateTimeFilter = mFilterPane.getFilter.getDateTimeFilter
 
       // Get commits between specified dates
-      val commits = adapter.getCommitIdsBetween(fromTime, toTime)
+      val commits = adapter.getCommitIdsBetween(dateTimeFilter._1, dateTimeFilter._2)
       // Get Map of Tuple2(<file>, <changed lines>) and filter it to remove binary changes.
       val commitsDiff = getCommitsDiff(adapter, commits).filterNot(_._2 == 0)
 
@@ -203,6 +171,8 @@ class VaultTab(title: String) extends Tab { thisTab =>
     else vaultAdapter.getChangedCount(commits.head, commits.last)
   }
 
+  private val mFilterPane = new FilterPane
+
   graphic = mTitle
   content = new BorderPane {
     top = new HBox(10) {
@@ -215,31 +185,29 @@ class VaultTab(title: String) extends Tab { thisTab =>
       HBox.setHgrow(mPathTextField, Priority.Always)
     }
 
-    left = new VBox {
-      padding = Insets(5)
-      spacing = 30
+    left = new ScrollPane {
+      hbarPolicy = ScrollBarPolicy.NEVER
+      vbarPolicy = ScrollBarPolicy.AS_NEEDED
+      fitToHeight = true
       style = "-fx-border-style: solid;" +
         "-fx-border-color: grey;" +
         "-fx-border-width: 0 1px 0 0;"
 
-      val fromDateLayout = new VBox(5, Label("From date:"), mFromDatePicker) {
-        alignment = Pos.TopLeft
-        padding = Insets(0, 0, 0, 10)
-      }
-      val toDateLayout = new VBox(5, Label("To date:"), mToDatePicker) {
-        alignment = Pos.TopLeft
-        padding = Insets(0, 0, 0, 10)
-      }
-      val refreshLayout = new StackPane {
-        alignment = Pos.BottomRight
-        children = List(mClearButton, mRefreshButton)
-      }
+      content = new VBox {
+        padding = Insets(0)
+        spacing = 10
 
-      children = List(
-        fromDateLayout,
-        toDateLayout,
-        refreshLayout
-      )
+        val refreshLayout = new StackPane {
+          padding = Insets(10, 5, 5, 5)
+          alignment = Pos.BottomRight
+          children = List(mClearButton, mRefreshButton)
+        }
+
+        children = List(
+          mFilterPane,
+          refreshLayout
+        )
+      }
     }
 
     center = mTreemapPane

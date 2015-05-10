@@ -24,8 +24,7 @@ libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.0.+" withJavadoc() withSources() excludeAll(
     ExclusionRule(organization = "com.googlecode.javaewah"),
     ExclusionRule(organization = "com.jcraft"),
-    ExclusionRule(organization = "org.apache.httpcomponents"),
-    ExclusionRule(organization = "org.slf4j")
+    ExclusionRule(organization = "org.apache.httpcomponents")
   )
 )
 
