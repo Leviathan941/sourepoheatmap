@@ -2,7 +2,7 @@ Sourepo Heatmap
 ==============
 Application for building changes heat map of a source repository.
 
-Only **Git** repository supported at the moment!
+Only **Git**, **[Repo](https://git.wiki.kernel.org/index.php/Interfaces,_frontends,_and_tools#repo)** repositories supported at the moment!
 
 How to build Sourepo Heatmap
 ----------------------------
@@ -10,9 +10,10 @@ How to build Sourepo Heatmap
 
 You need to have the following to compile and run the project:
 * [Java 1.8 JDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html).
+* JavaFX 8. It is included to Oracle JDK 8, for OpenJDK you have to install it separately, for example from [here](http://openjdk.java.net/projects/openjfx/).
 * [SBT](http://www.scala-sbt.org/) (v. 0.13 or newer).
 
-Other dependencies are included in the source tree or downloaded by SBT automatically.
+Other dependencies are downloaded by SBT automatically.
 
 ### Compile and Run using SBT ###
 
