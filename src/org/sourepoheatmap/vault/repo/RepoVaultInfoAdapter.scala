@@ -65,8 +65,9 @@ private[vault] class RepoVaultInfoAdapter(path: String) extends VaultInfoAdapter
 
   override def getBranches: List[String] = mVaults.keys.toList
 
-  override def switchBranch(branch: String): Unit =
-    mCurrentVault = path -> mVaults(path)
+  override def switchBranch(branch: String): Unit = {
+    mCurrentVault = branch -> mVaults(branch)
+  }
 
   override def getCommitIdUntil(until: Int): Option[String] =
     mCurrentVault._2.getCommitIdUntil(until)

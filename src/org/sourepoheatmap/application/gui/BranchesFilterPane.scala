@@ -30,30 +30,55 @@
 
 package org.sourepoheatmap.application.gui
 
-import org.sourepoheatmap.vault.VaultInfoAdapter
+import org.sourepoheatmap.application.gui.BranchesFilterPane.Item
 
+import scala.collection.JavaConversions._
+
+import scalafx.beans.property.BooleanProperty
+import scalafx.collections.ObservableBuffer
+import scalafx.geometry.Insets
+import scalafx.scene.control.{Label, ListView}
+import scalafx.scene.control.cell.CheckBoxListCell
 import scalafx.scene.layout.VBox
 
-/** Pane for filtering vault information.
+/** [[FilteringPane]] for providing branches selection.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-class FilterPane extends VBox with FilteringPane[TreemapFilter] {
+class BranchesFilterPane extends VBox with FilteringPane[List[String]] {
 
-  private val mDateTimeFilterPane = new DateTimeFilterPane
-  private val mBranchesFilterPane = new BranchesFilterPane
-
-  override def getFilter: TreemapFilter = {
-    new TreemapFilter(mDateTimeFilterPane.getFilter,
-      mBranchesFilterPane.getFilter)
+  private val mListView = new ListView[Item] {
+    cellFactory = CheckBoxListCell.forListView(_.selected)
+    prefHeight = 300
   }
 
-  def adjustFilters(vaultInfoAdapter: VaultInfoAdapter): Unit = {
-    mBranchesFilterPane.update(vaultInfoAdapter.getBranches)
+  override def getFilter: List[String] = {
+    for(item: Item <- mListView.getItems.toList
+      if item.isSelected
+    ) yield item.toString
+  }
+
+  def update(branches: List[String]): Unit = {
+    mListView.items = ObservableBuffer[Item](branches.map((b: String) => new Item(false, b)))
+    mListView.getItems.head.setSelected(true)
   }
 
   style = "-fx-border-style: solid;" +
-    "-fx-border-color: black;" +
+    "-fx-border-color: grey;" +
     "-fx-border-width: 0 0 1px 0;"
-  children = List(mDateTimeFilterPane, mBranchesFilterPane)
+  padding = Insets(10, 5, 10, 5)
+  spacing = 5
+  children = List(
+    Label("Select branches:"),
+    mListView
+  )
+}
+
+private object BranchesFilterPane {
+  private class Item(initialSelection: Boolean, private val name: String) {
+    val selected = BooleanProperty(initialSelection)
+    def setSelected(select: Boolean): Unit = selected.value = select
+    def isSelected: Boolean = selected.value
+    override def toString: String = name
+  }
 }

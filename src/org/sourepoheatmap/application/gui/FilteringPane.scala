@@ -6,15 +6,15 @@
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
+ *    this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
  *
  * 3. Neither the name of the copyright holder nor the names of its contributors
- *     may be used to endorse or promote products derived from this software without
- *     specific prior written permission.
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -30,21 +30,10 @@
 
 package org.sourepoheatmap.application.gui
 
-import java.time.{ZoneId, LocalDateTime}
-
-/** Container for different treemap filters.
+/** Trait to unify all filter panes.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-class TreemapFilter(private val mDateTime: (LocalDateTime, LocalDateTime),
-    private val mBranches: List[String]) {
-
-  def getDateTimeFilter: (Int, Int) =
-    convertDateToEpochTime(mDateTime._1) -> convertDateToEpochTime(mDateTime._2)
-
-  def getBranchesFilter: List[String] = mBranches
-
-  private def convertDateToEpochTime(dateTime: LocalDateTime): Int = {
-    dateTime.atZone(ZoneId.systemDefault()).toEpochSecond.toInt
-  }
+trait FilteringPane[T] {
+  def getFilter: T
 }

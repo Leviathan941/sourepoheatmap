@@ -31,7 +31,6 @@
 package org.sourepoheatmap.application.gui
 
 import scalafx.scene.layout.AnchorPane
-import scalafx.scene.paint.Color
 
 /** Pane to build and show treemap.
   *

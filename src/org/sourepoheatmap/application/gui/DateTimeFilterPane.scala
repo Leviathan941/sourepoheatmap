@@ -30,30 +30,60 @@
 
 package org.sourepoheatmap.application.gui
 
-import org.sourepoheatmap.vault.VaultInfoAdapter
+import java.time.{LocalTime, LocalDateTime, LocalDate}
+import java.time.format.DateTimeFormatter
 
+import scalafx.geometry.{Insets, Pos}
+import scalafx.scene.control.{Label, DatePicker}
 import scalafx.scene.layout.VBox
+import scalafx.util.StringConverter
 
-/** Pane for filtering vault information.
+/** [[FilteringPane]] for providing commit date and time filter.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-class FilterPane extends VBox with FilteringPane[TreemapFilter] {
+class DateTimeFilterPane extends VBox with FilteringPane[(LocalDateTime, LocalDateTime)] {
+  private class DateStringConverter extends StringConverter[LocalDate] {
+    private val mDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
-  private val mDateTimeFilterPane = new DateTimeFilterPane
-  private val mBranchesFilterPane = new BranchesFilterPane
+    override def fromString(dateString: String): LocalDate = {
+      Option(dateString) match {
+        case Some(s) if !s.isEmpty => LocalDate.parse(dateString, mDateFormatter)
+        case _ => null
+      }
+    }
 
-  override def getFilter: TreemapFilter = {
-    new TreemapFilter(mDateTimeFilterPane.getFilter,
-      mBranchesFilterPane.getFilter)
+    override def toString(localDate: LocalDate): String = {
+      Option(localDate) match {
+        case Some(ld) => mDateFormatter.format(ld)
+        case _ => ""
+      }
+    }
   }
 
-  def adjustFilters(vaultInfoAdapter: VaultInfoAdapter): Unit = {
-    mBranchesFilterPane.update(vaultInfoAdapter.getBranches)
+  private val mFromDatePicker = new DatePicker(LocalDate.now()) {
+    converter = new DateStringConverter
+  }
+  private val mToDatePicker = new DatePicker(LocalDate.now()) {
+    converter = new DateStringConverter
+  }
+
+  private val fromDateLayout = new VBox(5, Label("From date:"), mFromDatePicker) {
+    alignment = Pos.TopLeft
+  }
+  private val toDateLayout = new VBox(5, Label("To date:"), mToDatePicker) {
+    alignment = Pos.TopLeft
+  }
+
+  override def getFilter: (LocalDateTime, LocalDateTime) = {
+    LocalDateTime.of(mFromDatePicker.getValue, LocalTime.of(0, 0)) ->
+      LocalDateTime.of(mToDatePicker.getValue, LocalTime.of(0, 0))
   }
 
   style = "-fx-border-style: solid;" +
-    "-fx-border-color: black;" +
+    "-fx-border-color: grey;" +
     "-fx-border-width: 0 0 1px 0;"
-  children = List(mDateTimeFilterPane, mBranchesFilterPane)
+  spacing = 20
+  padding = Insets(10, 5, 20, 5)
+  children = List(fromDateLayout, toDateLayout)
 }
