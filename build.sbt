@@ -1,8 +1,8 @@
 lazy val root = (project in file(".")).
   settings(
     name := "sourepoheatmap",
-    version := "0.1-SNAPSHOT",
-    scalaVersion := "2.11.6"
+    version := "0.2-SNAPSHOT",
+    scalaVersion := "2.11.7"
   )
 
 scalacOptions ++= Seq("-feature")
@@ -34,13 +34,4 @@ mainClass in (Compile, packageBin) := Some("org.sourepoheatmap.application.gui.G
 
 mainClass in assembly := Some("org.sourepoheatmap.application.gui.GuiApplication")
 
-assemblyJarName in assembly := "sourepoheatmap_" + version.value + ".jar"
-
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
-
-assemblyExcludedJars in assembly := {
-  val cp = (fullClasspath in assembly).value
-  cp filter {
-    x => x.data.getName == "jfxrt.jar"
-  }
-}
+assemblyJarName in assembly := "sourepoheatmap-" + version.value + ".jar"

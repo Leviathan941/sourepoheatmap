@@ -30,23 +30,49 @@
 
 package org.sourepoheatmap.application.gui
 
-import scalafx.scene.paint.Color
+import org.sourepoheatmap.treemap
 
-/** Mapping weights to heatmap colors.
+import scalafx.Includes.handle
+import scalafx.scene.control.Tooltip
+import scalafx.scene.paint.Color
+import scalafx.scene.shape
+import scalafx.scene.text.TextAlignment
+
+/** Rectangular GUI element of the treemap.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-object HeatmapColor {
-  def weightsToRgb(weights: Map[String, Int]): Map[String, Color] = {
-    val min: Float = weights.minBy(_._2)._2
-    val max: Float = weights.maxBy(_._2)._2
-    val colors = for {
-      (key, value) <- weights
-      ratio = 2 * (value.toFloat - min) / (max - min)
-      blue = math.max(0, 255 * (1 - ratio))
-      red = math.max(0, 255 * (ratio - 1))
-      green = 255 - blue - red
-    } yield key -> Color.rgb(red.toInt, green.toInt, blue.toInt)
-    colors.toMap
+class ShapeRectangle(
+    override val position: (Double, Double),
+    override val dimension: (Double, Double),
+    override val info: (String, Int),
+    color: Color) extends shape.Rectangle with treemap.TreemapRectangle { rect =>
+
+  private val mTooltip = new Tooltip {
+    text = "Object: %s\nChanges: %d".format(info._1, info._2)
+    autoFix = true
+    textAlignment = TextAlignment.Center
+  }
+  Tooltip.install(this, mTooltip)
+
+  onMouseEntered = handle { rect.stroke = Color.White }
+  onMouseExited = handle { rect.stroke = Color.Black }
+
+  x = position._1
+  y = position._2
+  width = dimension._1
+  height = dimension._2
+  fill = color
+  stroke = Color.Black
+  strokeType = shape.StrokeType.Inside
+  strokeWidth = 1
+
+  // TODO Show diffInfo if the rectangle is big enough.
+}
+
+object ShapeRectangle {
+  def apply(color: Color)(rectCreator: treemap.TreemapRectangle.RectAttrs):
+      ShapeRectangle = {
+    new ShapeRectangle(rectCreator._1, rectCreator._2, rectCreator._3, color)
   }
 }

@@ -28,25 +28,23 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.sourepoheatmap.application.gui
+package org.sourepoheatmap.treemap
 
-import org.sourepoheatmap.treemap.{Treemap, HeatmapColor}
-
-import scalafx.scene.layout.AnchorPane
-
-/** Pane to build and show treemap.
+/** Mapping weight to heatmap color.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-class TreemapPane(
-    treemapWidth: Double,
-    treemapHeight: Double,
-    diffInfo: Map[String, Int]) extends AnchorPane {
-
-  private val mColormap = HeatmapColor.weightsToRgb(diffInfo)
-
-  private val mTreemap = new Treemap[ShapeRectangle](treemapWidth, treemapHeight, diffInfo,
-    creator => ShapeRectangle(ColorConverter.rgbToJfxColor(mColormap(creator._3._1)))(creator))
-
-  children = mTreemap.rectangles
+object HeatmapColor {
+  def weightsToRgb(weights: Map[String, Int]): Map[String, (Int, Int, Int)] = {
+    val min: Float = weights.minBy(_._2)._2
+    val max: Float = weights.maxBy(_._2)._2
+    val colors = for {
+      (key, value) <- weights
+      ratio = 2 * (value.toFloat - min) / (max - min)
+      blue = math.max(0, 255 * (1 - ratio))
+      red = math.max(0, 255 * (ratio - 1))
+      green = 255 - blue - red
+    } yield key -> (red.toInt, green.toInt, blue.toInt)
+    colors.toMap
+  }
 }

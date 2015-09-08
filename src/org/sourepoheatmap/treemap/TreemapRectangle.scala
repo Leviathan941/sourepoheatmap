@@ -28,25 +28,30 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.sourepoheatmap.application.gui
+package org.sourepoheatmap.treemap
 
-import org.sourepoheatmap.treemap.{Treemap, HeatmapColor}
-
-import scalafx.scene.layout.AnchorPane
-
-/** Pane to build and show treemap.
+/** Treemap rectangle abstracted from representation.
   *
   * @author Alexey Kuzin <amkuzink@gmail.com>
   */
-class TreemapPane(
-    treemapWidth: Double,
-    treemapHeight: Double,
-    diffInfo: Map[String, Int]) extends AnchorPane {
+trait TreemapRectangle {
+  def position: (Double, Double)
+  def dimension: (Double, Double)
+  def info: (String, Int)
+}
 
-  private val mColormap = HeatmapColor.weightsToRgb(diffInfo)
+object TreemapRectangle {
+  type RectAttrs = ((Double, Double), (Double, Double), (String, Int))
 
-  private val mTreemap = new Treemap[ShapeRectangle](treemapWidth, treemapHeight, diffInfo,
-    creator => ShapeRectangle(ColorConverter.rgbToJfxColor(mColormap(creator._3._1)))(creator))
+  case class SimpleRectangle(
+      position: (Double, Double),
+      dimension: (Double, Double),
+      info: (String, Int)) extends TreemapRectangle
 
-  children = mTreemap.rectangles
+  def apply[R <: TreemapRectangle](
+      position: (Double, Double),
+      dimension: (Double, Double),
+      info: (String, Int),
+      creator: RectAttrs => R = SimpleRectangle.tupled): R =
+    creator(position, dimension, info)
 }
