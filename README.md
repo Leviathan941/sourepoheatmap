@@ -1,4 +1,4 @@
-Sourepo Heatmap
+Sourepo Heatmap [![Build Status](https://travis-ci.org/leviathan941/sourepoheatmap.svg?branch=master)](https://travis-ci.org/leviathan941/sourepoheatmap)
 ==============
 Application for building changes heat map of a source repository.
 
