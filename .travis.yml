@@ -8,6 +8,6 @@ notifications:
       - amkuzink@gmail.com
 jdk:
   - oraclejdk8
-script:
+before_script:
   - echo $JAVA_HOME
   - find $JAVA_HOME -name jfxrt.jar
