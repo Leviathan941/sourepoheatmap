@@ -20,7 +20,7 @@ unmanagedJars in Compile += Attributed.blank(file("/usr/lib/jvm/java-8-oracle/jr
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parser-combinators" % "latest.integration",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  "org.scalafx" %% "scalafx" % "8.0.31-R7" withJavadoc() withSources(),
+  "org.scalafx" %% "scalafx" % "latest.integration" withJavadoc() withSources(),
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.0.+" withJavadoc() withSources() excludeAll(
     ExclusionRule(organization = "com.googlecode.javaewah"),
     ExclusionRule(organization = "com.jcraft"),
