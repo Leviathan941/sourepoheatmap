@@ -15,7 +15,7 @@ javaHome := {
   Some(jdkHome)
 }
 
-unmanagedJars in Compile += Attributed.blank(javaHome.value.getOrElse(file(".")) / "jre/lib/ext/jfxrt.jar")
+unmanagedJars in Compile += Attributed.blank(file("/usr/lib/jvm/java-8-oracle/jre/lib/ext/jfxrt.jar"))
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parser-combinators" % "latest.integration",
