@@ -2,12 +2,5 @@
 language: scala
 scala:
   - 2.11.7
-branches:
-  only:
-    - master
-notifications:
-  email:
-    recipients:
-      - amkuzink@gmail.com
 jdk:
   - oraclejdk8
