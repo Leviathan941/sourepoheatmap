@@ -5,7 +5,7 @@ lazy val root = (project in file(".")).
     scalaVersion := "2.11.7"
   )
 
-scalacOptions ++= Seq("-feature")
+scalacOptions ++= Seq("-feature", "-Ylog-classpath")
 
 scalaSource in Compile := baseDirectory.value / "src"
 
