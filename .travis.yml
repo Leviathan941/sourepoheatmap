@@ -2,12 +2,9 @@
 language: scala
 scala:
   - 2.11.7
-branches:
-  only:
-    - master
-notifications:
-  email:
-    recipients:
-      - amkuzink@gmail.com
 jdk:
   - oraclejdk8
+script:
+  - echo $JAVA_HOME
+  - find $JAVA_HOME -name jfxrt.jar
+  - sbt compile
