@@ -2,7 +2,8 @@ lazy val root = (project in file(".")).
   settings(
     name := "sourepoheatmap",
     version := "0.2-SNAPSHOT",
-    scalaVersion := "2.11.7"
+    scalaVersion := "2.11.7",
+    organization := "org.lev1athan"
   )
 
 scalacOptions ++= Seq("-feature")
@@ -22,7 +23,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parser-combinators" % "latest.integration",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   "org.scalafx" %% "scalafx" % "8.0.31-R7" withJavadoc() withSources(),
-  "org.eclipse.jgit" % "org.eclipse.jgit" % "4.0.+" withJavadoc() withSources() excludeAll(
+  "org.eclipse.jgit" % "org.eclipse.jgit" % "4.2.+" withJavadoc() withSources() excludeAll(
     ExclusionRule(organization = "com.googlecode.javaewah"),
     ExclusionRule(organization = "com.jcraft"),
     ExclusionRule(organization = "org.apache.httpcomponents")
@@ -30,9 +31,7 @@ libraryDependencies ++= Seq(
 )
 
 mainClass in (Compile, run) := Some("org.sourepoheatmap.application.gui.GuiApplication")
-
 mainClass in (Compile, packageBin) := Some("org.sourepoheatmap.application.gui.GuiApplication")
 
 mainClass in assembly := Some("org.sourepoheatmap.application.gui.GuiApplication")
-
 assemblyJarName in assembly := "sourepoheatmap-" + version.value + ".jar"
