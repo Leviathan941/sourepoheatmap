@@ -1,14 +1,60 @@
-lazy val root = (project in file(".")).
-  settings(
-    name := "sourepoheatmap",
-    version := "0.2-SNAPSHOT",
-    scalaVersion := "2.11.7",
-    organization := "org.lev1athan"
+import Dependencies._
+
+val srcPath: File = file(".")
+
+lazy val commonSettings: Seq[Setting[_]] = Seq(
+  scalaVersion := scala211,
+  version := "0.2-SNAPSHOT",
+  organization := "org.leviathan941",
+  scalacOptions ++= Seq("-feature")
   )
 
-scalacOptions ++= Seq("-feature")
+lazy val root: Project = (project in srcPath).
+  aggregate(guiApp, cliApp, core).
+  settings(commonSettings: _*).
+  settings(
+    name := "sourepoheatmap",
+    description := "Application for building changes tree map of a source repository",
+    libraryDependencies ++= Seq(
+      scalaFx withJavadoc() withSources()
+    )
+  )
 
-scalaSource in Compile := baseDirectory.value / "src"
+lazy val core: Project = (project in srcPath / "core").
+  settings(commonSettings: _*).
+  settings(
+    name := "sourepoheatmap-core",
+    description := "Core of Sourepo Heatmap",
+    libraryDependencies ++= Seq(
+      scalaCombinator,
+      scalaReflect.value,
+      eclipseJgit withJavadoc() withSources()
+    )
+  )
+
+lazy val guiApp: Project = (project in srcPath / "guiapp").
+  dependsOn(core).
+  settings(commonSettings: _*).
+  settings(
+    name := "sourepoheatmap-gui",
+    description := "GUI for Sourepo Heatmap",
+    libraryDependencies += scalaFx withJavadoc() withSources(),
+
+    mainClass in (Compile, run) := Some("sourepoheatmap.application.gui.GuiApplication"),
+    mainClass in (Compile, packageBin) := Some("sourepoheatmap.application.gui.GuiApplication"),
+
+    mainClass in assembly := Some("sourepoheatmap.application.gui.GuiApplication"),
+    assemblyJarName in assembly := name.value + "-" + version.value + ".jar"
+  )
+
+lazy val cliApp: Project = (project in srcPath / "cliapp").
+  dependsOn(core).
+  settings(commonSettings: _*).
+  settings(
+    name := "sourepoheatmap-cli",
+    description := "CLI for Sourepo Heatmap"
+  )
+
 
 javaHome := {
   val jdkHome: File = file(System.getenv("JAVA_HOME"))
@@ -18,20 +64,3 @@ javaHome := {
 
 unmanagedJars in Compile += Attributed.blank(javaHome.value.getOrElse(file("/usr/lib/jvm/java-8-oracle")) /
   "jre/lib/ext/jfxrt.jar")
-
-libraryDependencies ++= Seq(
-  "org.scala-lang.modules" %% "scala-parser-combinators" % "latest.integration",
-  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  "org.scalafx" %% "scalafx" % "8.0.31-R7" withJavadoc() withSources(),
-  "org.eclipse.jgit" % "org.eclipse.jgit" % "4.2.+" withJavadoc() withSources() excludeAll(
-    ExclusionRule(organization = "com.googlecode.javaewah"),
-    ExclusionRule(organization = "com.jcraft"),
-    ExclusionRule(organization = "org.apache.httpcomponents")
-  )
-)
-
-mainClass in (Compile, run) := Some("org.sourepoheatmap.application.gui.GuiApplication")
-mainClass in (Compile, packageBin) := Some("org.sourepoheatmap.application.gui.GuiApplication")
-
-mainClass in assembly := Some("org.sourepoheatmap.application.gui.GuiApplication")
-assemblyJarName in assembly := "sourepoheatmap-" + version.value + ".jar"
