@@ -6,7 +6,14 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
   scalaVersion := scala211,
   version := "0.2-SNAPSHOT",
   organization := "org.leviathan941",
-  scalacOptions ++= Seq("-feature")
+  scalacOptions += "-feature",
+  licenses += ("BSD 3-Clause", url("http://opensource.org/licenses/BSD-3-Clause")),
+
+  javaHome := {
+    val jdkHome: File = file(System.getenv("JAVA_HOME"))
+    if (!jdkHome.exists) throw new RuntimeException( "No JDK found - try to set 'JAVA_HOME' environment variable." )
+    Some(jdkHome)
+  }
   )
 
 lazy val root: Project = (project in srcPath).
@@ -40,6 +47,9 @@ lazy val guiApp: Project = (project in srcPath / "guiapp").
     description := "GUI for Sourepo Heatmap",
     libraryDependencies += scalaFx withJavadoc() withSources(),
 
+    unmanagedJars in Compile += Attributed.blank(javaHome.value.getOrElse(file("/usr/lib/jvm/java-8-oracle")) /
+      "jre/lib/ext/jfxrt.jar"),
+
     mainClass in (Compile, run) := Some("sourepoheatmap.application.gui.GuiApplication"),
     mainClass in (Compile, packageBin) := Some("sourepoheatmap.application.gui.GuiApplication"),
 
@@ -54,13 +64,3 @@ lazy val cliApp: Project = (project in srcPath / "cliapp").
     name := "sourepoheatmap-cli",
     description := "CLI for Sourepo Heatmap"
   )
-
-
-javaHome := {
-  val jdkHome: File = file(System.getenv("JAVA_HOME"))
-  if (!jdkHome.exists) throw new RuntimeException( "No JDK found - try to set 'JAVA_HOME' environment variable." )
-  Some(jdkHome)
-}
-
-unmanagedJars in Compile += Attributed.blank(javaHome.value.getOrElse(file("/usr/lib/jvm/java-8-oracle")) /
-  "jre/lib/ext/jfxrt.jar")
