@@ -19,12 +19,12 @@ Other dependencies are downloaded by SBT automatically.
 
 * Open a terminal and go to the directory with the project source code.
 * Specify `JAVA_HOME` environment variable.
-* Type `sbt run` to compile and launch the application.
-* Type `sbt assembly` to create _fat_ JAR.
+* Type `sbt "project guiApp" run` to compile and launch the application.
+* Type `sbt "project guiApp" assembly` to create _fat_ JAR.
 
 License
 -------
-Copyright (C) 2015 Alexey Kuzin. All rights reserved.
+Copyright (C) 2015, 2016 Alexey Kuzin. All rights reserved.
 
 This project is governed by the BSD New license. For details see the file
 titled LICENSE in the project root folder.
