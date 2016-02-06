@@ -50,10 +50,10 @@ lazy val guiApp: Project = (project in srcPath / "guiapp").
     unmanagedJars in Compile += Attributed.blank(javaHome.value.getOrElse(file("/usr/lib/jvm/java-8-oracle")) /
       "jre/lib/ext/jfxrt.jar"),
 
-    mainClass in (Compile, run) := Some("sourepoheatmap.application.gui.GuiApplication"),
-    mainClass in (Compile, packageBin) := Some("sourepoheatmap.application.gui.GuiApplication"),
+    mainClass in (Compile, run) := Some("sourepoheatmap.gui.GuiApplication"),
+    mainClass in (Compile, packageBin) := Some("sourepoheatmap.gui.GuiApplication"),
 
-    mainClass in assembly := Some("sourepoheatmap.application.gui.GuiApplication"),
+    mainClass in assembly := Some("sourepoheatmap.gui.GuiApplication"),
     assemblyJarName in assembly := name.value + "-" + version.value + ".jar"
   )
 
