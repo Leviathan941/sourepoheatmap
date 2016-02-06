@@ -28,7 +28,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package sourepoheatmap.application.gui
+package sourepoheatmap.gui
 
 /** Converts [[Tuple3]] RGB color presentation to different
   * color objects: [[scalafx.scene.paint.Color]].

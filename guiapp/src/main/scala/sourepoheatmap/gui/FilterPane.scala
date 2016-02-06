@@ -28,7 +28,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package sourepoheatmap.application.gui
+package sourepoheatmap.gui
 
 import sourepoheatmap.vault.VaultInfoAdapter
 

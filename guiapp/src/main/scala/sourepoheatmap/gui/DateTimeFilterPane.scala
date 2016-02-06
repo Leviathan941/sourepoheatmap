@@ -28,7 +28,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package sourepoheatmap.application.gui
+package sourepoheatmap.gui
 
 import java.time.{LocalTime, LocalDateTime, LocalDate}
 import java.time.format.DateTimeFormatter

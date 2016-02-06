@@ -28,9 +28,9 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package sourepoheatmap.application.gui
+package sourepoheatmap.gui
 
-import sourepoheatmap.application.gui.BranchesFilterPane.Item
+import sourepoheatmap.gui.BranchesFilterPane.Item
 
 import scala.collection.JavaConversions._
 

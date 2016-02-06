@@ -28,7 +28,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package sourepoheatmap.application.cli
+package sourepoheatmap.cli
 
 import sourepoheatmap.vault.VaultInfoAdapter
 //import sourepoheatmap.vault.git.GitDiffParser
