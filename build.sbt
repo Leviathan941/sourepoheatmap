@@ -13,8 +13,8 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
   javaHome := {
     val javaHomePath: Option[String] = Option(System.getenv("JAVA_HOME"))
     javaHomePath match {
-      case None => throw new RuntimeException("No JDK found - try to set 'JAVA_HOME' environment variable.")
-      case Some(path) => Option(file(path))
+      case Some(path) if file(path).exists => Option(file(path))
+      case _ => throw new RuntimeException("No JDK found - try to set 'JAVA_HOME' environment variable.")
     }
   }
   )
