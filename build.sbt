@@ -1,6 +1,7 @@
 import Dependencies._
 
 val srcPath: File = file(".")
+val defaultJavaHomePath: String = "/usr/lib/jvm/java-8-oracle"
 
 lazy val commonSettings: Seq[Setting[_]] = Seq(
   scalaVersion := scala211,
@@ -10,9 +11,11 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
   licenses += ("BSD 3-Clause", url("http://opensource.org/licenses/BSD-3-Clause")),
 
   javaHome := {
-    val jdkHome: File = file(System.getenv("JAVA_HOME"))
-    if (!jdkHome.exists) throw new RuntimeException( "No JDK found - try to set 'JAVA_HOME' environment variable." )
-    Some(jdkHome)
+    val javaHomePath: Option[String] = Option(System.getenv("JAVA_HOME"))
+    javaHomePath match {
+      case None => throw new RuntimeException("No JDK found - try to set 'JAVA_HOME' environment variable.")
+      case Some(path) => Option(file(path))
+    }
   }
   )
 
@@ -47,7 +50,7 @@ lazy val guiApp: Project = (project in srcPath / "guiapp").
     description := "GUI for Sourepo Heatmap",
     libraryDependencies += scalaFx withJavadoc() withSources(),
 
-    unmanagedJars in Compile += Attributed.blank(javaHome.value.getOrElse(file("/usr/lib/jvm/java-8-oracle")) /
+    unmanagedJars in Compile += Attributed.blank(javaHome.value.getOrElse(file(defaultJavaHomePath)) /
       "jre/lib/ext/jfxrt.jar"),
 
     mainClass in (Compile, run) := Some("sourepoheatmap.gui.GuiApplication"),
