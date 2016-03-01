@@ -11,8 +11,7 @@ lazy val commonSettings: Seq[Setting[_]] = Seq(
   licenses += ("BSD 3-Clause", url("http://opensource.org/licenses/BSD-3-Clause")),
 
   javaHome := {
-    val javaHomePath: Option[String] = Option(System.getenv("JAVA_HOME"))
-    javaHomePath match {
+    Option(System.getenv("JAVA_HOME")) match {
       case Some(path) if file(path).exists => Option(file(path))
       case _ => throw new RuntimeException("No JDK found - try to set 'JAVA_HOME' environment variable.")
     }
