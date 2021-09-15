@@ -9,9 +9,9 @@ How to build Sourepo Heatmap
 ### Requirements ###
 
 You need to have the following to compile and run the project:
-* [Java 1.8 JDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html).
-* JavaFX 8. It is included to Oracle JDK 8, for OpenJDK you have to install it separately, for example from [here](http://openjdk.java.net/projects/openjfx/).
-* [SBT](http://www.scala-sbt.org/) (v. 0.13 or newer).
+* [OpenJDK](https://openjdk.java.net/) v. 8 or newer.
+* [OpenJFX](https://openjdk.java.net/projects/openjfx/) v. 8 or newer.
+* [SBT](http://www.scala-sbt.org/) (v. 1.0 or newer).
 
 Other dependencies are downloaded by SBT automatically.
 
@@ -24,7 +24,7 @@ Other dependencies are downloaded by SBT automatically.
 
 License
 -------
-Copyright (C) 2015, 2016 Alexey Kuzin. All rights reserved.
+Copyright (C) 2015-2021 Alexey Kuzin. All rights reserved.
 
 This project is governed by the BSD New license. For details see the file
 titled LICENSE in the project root folder.
