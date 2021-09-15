@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 Alexey Kuzin <amkuzink@gmail.com>
+ * Copyright (c) 2015-2021 Alexey Kuzin <amkuzink@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -32,7 +32,7 @@ package sourepoheatmap.gui
 
 import sourepoheatmap.gui.BranchesFilterPane.Item
 
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 
 import scalafx.beans.property.BooleanProperty
 import scalafx.collections.ObservableBuffer
@@ -53,14 +53,14 @@ class BranchesFilterPane extends VBox with FilteringPane[List[String]] {
   }
 
   override def getFilter: List[String] = {
-    for(item: Item <- mListView.getItems.toList
+    for(item: Item <- mListView.getItems.asScala.toList
       if item.isSelected
     ) yield item.toString
   }
 
   def update(branches: List[String]): Unit = {
-    mListView.items = ObservableBuffer[Item](branches.map((b: String) => new Item(false, b)))
-    mListView.getItems.head.setSelected(true)
+    mListView.items = ObservableBuffer.from(branches.map((b: String) => new Item(false, b)))
+    mListView.getItems.asScala.head.setSelected(true)
   }
 
   style = "-fx-border-style: solid;" +

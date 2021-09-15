@@ -4,7 +4,7 @@ val srcPath: File = file(".")
 val defaultJavaHomePath: String = "/usr/lib/jvm/java-8-oracle"
 
 lazy val commonSettings: Seq[Setting[_]] = Seq(
-  scalaVersion := scala211,
+  scalaVersion := scala213,
   version := "0.2-SNAPSHOT",
   organization := "org.leviathan941",
   scalacOptions += "-feature",
@@ -48,15 +48,17 @@ lazy val guiApp: Project = (project in srcPath / "guiapp").
     name := "sourepoheatmap-gui",
     description := "GUI for Sourepo Heatmap",
     libraryDependencies += scalaFx withJavadoc() withSources(),
+    libraryDependencies ++= javaFXModules,
 
-    unmanagedJars in Compile += Attributed.blank(javaHome.value.getOrElse(file(defaultJavaHomePath)) /
-      "jre/lib/ext/jfxrt.jar"),
+    Compile / run / mainClass := Some("sourepoheatmap.gui.GuiApplication"),
+    Compile / packageBin / mainClass := Some("sourepoheatmap.gui.GuiApplication"),
 
-    mainClass in (Compile, run) := Some("sourepoheatmap.gui.GuiApplication"),
-    mainClass in (Compile, packageBin) := Some("sourepoheatmap.gui.GuiApplication"),
-
-    mainClass in assembly := Some("sourepoheatmap.gui.GuiApplication"),
-    assemblyJarName in assembly := name.value + "-" + version.value + ".jar"
+    assembly / mainClass := Some("sourepoheatmap.gui.GuiApplication"),
+    assembly / assemblyJarName := name.value + "-" + version.value + ".jar",
+    assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+      case x => MergeStrategy.first
+    },
   )
 
 lazy val cliApp: Project = (project in srcPath / "cliapp").

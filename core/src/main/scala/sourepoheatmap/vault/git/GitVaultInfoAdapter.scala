@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 Alexey Kuzin <amkuzink@gmail.com>
+ * Copyright (c) 2015-2021 Alexey Kuzin <amkuzink@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -40,8 +40,8 @@ import org.eclipse.jgit.revwalk.{RevCommit, RevWalk}
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.{AbstractTreeIterator, CanonicalTreeParser, EmptyTreeIterator}
 
-import scala.collection.JavaConversions._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 
 import sourepoheatmap.vault.VaultInfoAdapter.VaultType.VaultType
 import sourepoheatmap.vault.git.GitDiffParser.{DeletedLine, AddedLine, LineChange, FileDiff}
@@ -103,7 +103,7 @@ private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter 
     mRepo.incrementOpen()
     try {
       val git = new Git(mRepo)
-      val branchList = getBranchList(git.branchList).call.toList
+      val branchList= getBranchList(git.branchList).call.asScala.toList
       for (branch <- branchList) yield branch.getName
     } catch {
       case ex: GitAPIException => throw new VaultException("Failed to get branches: " + ex.getMessage)
@@ -146,7 +146,7 @@ private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter 
     mRepo.incrementOpen()
     try {
       val git = new Git(mRepo)
-      val commitsBetween = git.log.call.toList
+      val commitsBetween = git.log.call.asScala.toList
         .filter(commitCondition)
         .sortWith(_.getCommitTime < _.getCommitTime)
       for (commit <- commitsBetween) yield
@@ -203,7 +203,7 @@ private[vault] class GitVaultInfoAdapter(path: String) extends VaultInfoAdapter 
       val diffEntries = diffFormatter.scan(
         oldTreeIter(revWalk),
         newTreeIter(revWalk)
-      ).toList
+      ).asScala.toList
 
       for (entry <- diffEntries) yield {
         outStream.reset()

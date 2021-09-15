@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Alexey Kuzin <amkuzink@gmail.com>
+ * Copyright (c) 2016-2021 Alexey Kuzin <amkuzink@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -32,16 +32,28 @@ import sbt._
 import Keys._
 
 object Dependencies {
-  lazy val scala211 = "2.11.7"
+  lazy val scala213 = "2.13.6"
 
-  lazy val scalaCombinator = "org.scala-lang.modules" %% "scala-parser-combinators" % "latest.integration"
+  lazy val scalaCombinator = "org.scala-lang.modules" %% "scala-parser-combinators" % "2.0.0"
   lazy val scalaReflect = Def.setting { "org.scala-lang" % "scala-reflect" % scalaVersion.value }
 
-  lazy val scalaFx = "org.scalafx" %% "scalafx" % "8.0.31-R7"
+  lazy val scalaFx = "org.scalafx" %% "scalafx" % "16.0.0-R24"
 
-  lazy val eclipseJgit = "org.eclipse.jgit" % "org.eclipse.jgit" % "4.2.+" excludeAll(
+  lazy val eclipseJgit = "org.eclipse.jgit" % "org.eclipse.jgit" % "5.12.+" excludeAll(
     ExclusionRule(organization = "com.googlecode.javaewah"),
     ExclusionRule(organization = "com.jcraft"),
     ExclusionRule(organization = "org.apache.httpcomponents")
+  )
+
+  // Determine OS version of JavaFX binaries
+  lazy val osName = System.getProperty("os.name") match {
+    case n if n.startsWith("Linux")   => "linux"
+    case n if n.startsWith("Mac")     => "mac"
+    case n if n.startsWith("Windows") => "win"
+    case _ => throw new Exception("Unknown platform!")
+  }
+
+  lazy val javaFXModules = Seq("base", "controls", "fxml", "graphics", "media", "swing", "web").map(m =>
+    "org.openjfx" % s"javafx-$m" % "16" classifier osName
   )
 }
